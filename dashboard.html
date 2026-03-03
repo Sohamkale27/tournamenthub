@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - TournamentHub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="dashboard-body">
+    <aside class="sidebar glass">
+        <div class="logo">T<span>Hub</span></div>
+        <ul class="sidebar-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="dashboard.html" class="active">Overview</a></li>
+            <li><a href="#">My Tournaments</a></li>
+            <li><a href="leaderboard.html">Leaderboard</a></li>
+            <li><a href="#">Settings</a></li>
+        </ul>
+    </aside>
+
+    <main class="dashboard-content fade-in">
+        <header class="dashboard-header">
+            <h2>Welcome back, <span class="gradient-text">Player</span></h2>
+            <div class="user-profile">
+                <div class="avatar">P</div>
+            </div>
+        </header>
+
+        <section class="stats-grid">
+            <div class="stat-card glass-card">
+                <p>Active Tournaments</p>
+                <h3>3</h3>
+            </div>
+            <div class="stat-card glass-card">
+                <p>Global Rank</p>
+                <h3>#42</h3>
+            </div>
+            <div class="stat-card glass-card">
+                <p>Win Rate</p>
+                <h3>68%</h3>
+            </div>
+            <div class="stat-card glass-card">
+                <p>Total Prize Won</p>
+                <h3>$1,250</h3>
+            </div>
+        </section>
+
+        <section class="tournaments-section">
+            <div class="section-title">
+                <h3>Upcoming Matches</h3>
+                <button class="btn btn-primary btn-sm">Find Tournaments</button>
+            </div>
+            <div class="tournament-list" id="tournament-list">
+                <!-- Populated by JS -->
+            </div>
+        </section>
+    </main>
+
+    <script src="js/script.js"></script>
+</body>
+
+</html>

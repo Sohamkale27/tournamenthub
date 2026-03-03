@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TournamentHub | Organizer Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .sidebar-logo {
+            margin-bottom: 40px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .menu-item:hover,
+        .menu-item.active {
+            background: rgba(57, 255, 20, 0.1);
+            color: var(--accent-green);
+            transform: translateX(5px);
+        }
+
+        .menu-item.logout {
+            margin-top: auto;
+            color: #ff4d4f;
+        }
+
+        .menu-item.logout:hover {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: #fff;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        /* Table Styles */
+        .glass-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        .glass-table th {
+            text-align: left;
+            padding: 16px;
+            border-bottom: 1px solid var(--glass-border);
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+        }
+
+        .glass-table td {
+            padding: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            transition: var(--transition);
+        }
+
+        .glass-table tbody tr:hover td {
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            max-width: 500px;
+            width: 100%;
+            position: relative;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+        }
+
+        .close-modal:hover {
+            color: #fff;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                padding: 20px;
+                position: relative;
+            }
+
+            .sidebar-logo {
+                margin-bottom: 20px;
+            }
+
+            .sidebar-menu {
+                display: none;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .glass-table {
+                display: block;
+                overflow-x: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo logo">
+                <span>🏆</span> T<span class="text-accent">Hub</span>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="organizer-dashboard.html" class="menu-item active">Dashboard</a>
+                <a href="#" class="menu-item">Create Tournament</a>
+                <a href="#" class="menu-item">Manage Teams</a>
+                <a href="#" class="menu-item">Generate Fixtures</a>
+                <a href="#" class="menu-item" onclick="openModal('scoreModal')">Update Scores</a>
+                <a href="leaderboard.html" class="menu-item">View Leaderboard</a>
+                <a href="matches.html" class="menu-item">Match Records</a>
+                <a href="#" class="menu-item">Settings</a>
+                <a href="login.html" class="menu-item logout">Logout</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content fade-in">
+            <div class="topbar">
+                <div>
+                    <h2>Organizer <span class="text-accent">Panel</span></h2>
+                    <p>Manage your tournaments efficiently.</p>
+                </div>
+                <div class="user-profile">
+                    <button class="btn btn-secondary btn-sm" style="border-radius: 20px;">Settings</button>
+                    <div class="avatar">O</div>
+                </div>
+            </div>
+
+            <!-- Create Tournament Form -->
+            <div class="glass-card" style="margin-bottom: 40px;">
+                <h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px;">
+                    Create New Tournament</h3>
+                <form class="form-grid">
+                    <div class="input-group">
+                        <label>Tournament Name</label>
+                        <input type="text" class="glass-input" placeholder="e.g. Pune Tech League">
+                    </div>
+                    <div class="input-group">
+                        <label>Sport Type</label>
+                        <select class="glass-input">
+                            <option>Football</option>
+                            <option>Cricket</option>
+                            <option>Basketball</option>
+                            <option>Badminton</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Format</label>
+                        <select class="glass-input">
+                            <option>Knockout</option>
+                            <option>Round Robin</option>
+                            <option>League + Knockout</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Number of Teams</label>
+                        <input type="number" class="glass-input" min="2" max="64" value="16">
+                    </div>
+                    <div class="input-group">
+                        <label>Start Date</label>
+                        <input type="date" class="glass-input">
+                    </div>
+                    <div class="input-group">
+                        <label>Location</label>
+                        <input type="text" class="glass-input" placeholder="Stadium / Arena">
+                    </div>
+                    <div style="grid-column: 1 / -1; margin-top: 10px;">
+                        <button type="button" class="btn btn-primary" onclick="alert('Tournament Created!')">Initialize
+                            Tournament</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Fixture Table -->
+            <div class="glass-card">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+                    <h3>Live Fixtures & Results</h3>
+                    <button class="btn btn-secondary btn-sm" onclick="openModal('scoreModal')">Update Score</button>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="glass-table">
+                        <thead>
+                            <tr>
+                                <th>Match ID</th>
+                                <th>Team A</th>
+                                <th>Score</th>
+                                <th>Team B</th>
+                                <th>Date/Time</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>#F01</td>
+                                <td>Titans FC</td>
+                                <td style="font-weight: 700;">3 - 1</td>
+                                <td>Spartans SC</td>
+                                <td>Oct 10, 18:00</td>
+                                <td><span class="badge badge-completed">Completed</span></td>
+                            </tr>
+                            <tr>
+                                <td>#F02</td>
+                                <td>Iron Wolves</td>
+                                <td style="font-weight: 700;">-</td>
+                                <td>Thunder Strikers</td>
+                                <td>Oct 12, 10:00</td>
+                                <td><span class="badge badge-upcoming">Upcoming</span></td>
+                            </tr>
+                            <tr>
+                                <td>#F03</td>
+                                <td class="text-accent">Royal City</td>
+                                <td style="font-weight: 700;">2 - 0</td>
+                                <td>Kings XI</td>
+                                <td>Oct 12, 14:00</td>
+                                <td><span class="badge badge-live">Live</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Score Update Modal -->
+    <div class="modal" id="scoreModal">
+        <div class="glass-card modal-content fade-in-up">
+            <span class="close-modal" onclick="closeModal('scoreModal')">&times;</span>
+            <h3 style="margin-bottom: 24px;">Update Match Score</h3>
+            <form>
+                <div class="input-group">
+                    <label>Select Match ID</label>
+                    <select class="glass-input">
+                        <option>#F02 (Iron Wolves vs Thunder Strikers)</option>
+                        <option>#F03 (Royal City vs Kings XI)</option>
+                    </select>
+                </div>
+                <div
+                    style="display: flex; gap: 20px; margin-top: 20px; align-items: center; justify-content: space-between;">
+                    <div class="input-group" style="flex:1;">
+                        <label>Team A Score</label>
+                        <input type="number" class="glass-input" value="0" min="0">
+                    </div>
+                    <div style="font-size: 1.5rem; color: var(--text-muted); padding-top: 15px;">-</div>
+                    <div class="input-group" style="flex:1;">
+                        <label>Team B Score</label>
+                        <input type="number" class="glass-input" value="0" min="0">
+                    </div>
+                </div>
+                <div class="input-group" style="margin-top: 20px;">
+                    <label>Match Status</label>
+                    <select class="glass-input">
+                        <option>Live</option>
+                        <option>Completed</option>
+                    </select>
+                </div>
+                <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 20px;"
+                    onclick="closeModal('scoreModal')">Save Update</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+    </script>
+</body>
+
+</html>

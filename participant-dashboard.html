@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TournamentHub | Participant Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .dashboard-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: 280px;
+            background: var(--bg-card);
+            border-right: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            padding: 30px 20px;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+        }
+
+        .sidebar-logo {
+            margin-bottom: 40px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            font-weight: 500;
+            transition: var(--transition);
+        }
+
+        .menu-item:hover,
+        .menu-item.active {
+            background: rgba(57, 255, 20, 0.1);
+            color: var(--accent-green);
+            transform: translateX(5px);
+        }
+
+        .menu-item.logout {
+            margin-top: auto;
+            color: #ff4d4f;
+        }
+
+        .menu-item.logout:hover {
+            background: rgba(255, 77, 79, 0.1);
+            color: #ff4d4f;
+        }
+
+        /* Topbar Styles */
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 40px;
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--accent-green);
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            flex-grow: 1;
+            padding: 40px;
+            overflow-y: auto;
+        }
+
+        /* Dashboard Specific Grid */
+        .dash-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .stat-card {
+            padding: 24px;
+        }
+
+        .stat-card p {
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card h3 {
+            font-size: 2.5rem;
+            color: var(--text-main);
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+        }
+
+        .list-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        .list-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.02);
+            margin-bottom: 12px;
+            transition: var(--transition);
+            border: 1px solid transparent;
+        }
+
+        .list-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--glass-border);
+        }
+
+        .item-info h4 {
+            margin-bottom: 4px;
+            font-size: 1.1rem;
+        }
+
+        .item-info p {
+            font-size: 0.85rem;
+        }
+
+        .item-action {
+            text-align: right;
+        }
+
+        .score-box {
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .win {
+            color: var(--accent-green);
+        }
+
+        .loss {
+            color: #ff4d4f;
+        }
+
+        @media (max-width: 900px) {
+            .dashboard-layout {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                padding: 20px;
+                position: relative;
+            }
+
+            .sidebar-logo {
+                margin-bottom: 20px;
+            }
+
+            .sidebar-menu {
+                display: none;
+            }
+
+            /* Mobile menu toggle needed */
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-layout">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-logo logo">
+                <span>🏆</span> T<span class="text-accent">Hub</span>
+            </div>
+            <nav class="sidebar-menu">
+                <a href="participant-dashboard.html" class="menu-item active">Dashboard</a>
+                <a href="#" class="menu-item">My Tournaments</a>
+                <a href="#" class="menu-item">Upcoming Matches</a>
+                <a href="#" class="menu-item">Match History</a>
+                <a href="leaderboard.html" class="menu-item">Leaderboard</a>
+                <a href="#" class="menu-item">Profile</a>
+                <a href="login.html" class="menu-item logout" style="margin-top: auto;">Logout</a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content fade-in">
+            <div class="topbar">
+                <div>
+                    <h2>Hello, <span class="text-accent">Alex</span></h2>
+                    <p>Welcome back to your participant dashboard.</p>
+                </div>
+                <div class="user-profile">
+                    <button class="btn btn-secondary btn-sm" style="border-radius: 20px;">Edit Profile</button>
+                    <div class="avatar">A</div>
+                </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="dash-grid">
+                <div class="glass-card stat-card">
+                    <p>Tournaments Active</p>
+                    <h3>2</h3>
+                </div>
+                <div class="glass-card stat-card">
+                    <p>Total Wins</p>
+                    <h3 class="text-accent">14</h3>
+                </div>
+                <div class="glass-card stat-card">
+                    <p>Win Rate</p>
+                    <h3>78%</h3>
+                </div>
+                <div class="glass-card stat-card">
+                    <p>Global Rank</p>
+                    <h3>#142</h3>
+                </div>
+            </div>
+
+            <div class="content-grid">
+                <!-- Left Column -->
+                <div>
+                    <!-- My Registered Tournaments -->
+                    <div class="glass-card" style="margin-bottom: 24px;">
+                        <div class="list-header">
+                            <h3>My Tournaments</h3>
+                            <a href="matches.html" class="text-accent" style="font-size: 0.9rem;">View All</a>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <h4>Inter-College Football Cup</h4>
+                                <p>Football • Knockout</p>
+                            </div>
+                            <div class="item-action">
+                                <span class="badge badge-live"
+                                    style="margin-bottom: 8px; display: inline-block;">Live</span>
+                                <br>
+                                <a href="#" class="btn btn-secondary btn-sm">Standings</a>
+                            </div>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <h4>Weekend Smash Bros</h4>
+                                <p>Esports • Double Elimination</p>
+                            </div>
+                            <div class="item-action">
+                                <span class="badge badge-upcoming"
+                                    style="margin-bottom: 8px; display: inline-block;">Starts in 2 days</span>
+                                <br>
+                                <a href="#" class="btn btn-secondary btn-sm">Details</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Match Results -->
+                    <div class="glass-card">
+                        <div class="list-header">
+                            <h3>Recent Results</h3>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <h4>Titans FC vs Spartans SC</h4>
+                                <p>Football League • Yesterday</p>
+                            </div>
+                            <div class="item-action" style="display: flex; align-items: center; gap: 16px;">
+                                <div class="score-box">3 - 1</div>
+                                <span class="badge badge-live win"
+                                    style="border: 1px solid var(--accent-green); background: rgba(57, 255, 20, 0.1); animation: none;">Won</span>
+                            </div>
+                        </div>
+                        <div class="list-item">
+                            <div class="item-info">
+                                <h4>Titans FC vs Royal City</h4>
+                                <p>Football League • Last Week</p>
+                            </div>
+                            <div class="item-action" style="display: flex; align-items: center; gap: 16px;">
+                                <div class="score-box">1 - 2</div>
+                                <span class="badge loss"
+                                    style="border: 1px solid #ff4d4f; background: rgba(255, 77, 79, 0.1);">Lost</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <!-- Upcoming Matches -->
+                    <div class="glass-card">
+                        <div class="list-header">
+                            <h3>Upcoming Matches</h3>
+                        </div>
+                        <div style="display: flex; flex-direction: column; gap: 16px;">
+                            <div
+                                style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border-left: 3px solid var(--accent-green);">
+                                <div
+                                    style="font-size: 0.8rem; color: var(--accent-green); margin-bottom: 8px; font-weight: 600;">
+                                    TOMORROW • 16:00</div>
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px;">
+                                    <span>You</span>
+                                    <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
+                                    <span>Iron Wolves</span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">Main Ground</div>
+                            </div>
+
+                            <div
+                                style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border-left: 3px solid #ffc107;">
+                                <div style="font-size: 0.8rem; color: #ffc107; margin-bottom: 8px; font-weight: 600;">
+                                    FRI, OCT 12 • 10:00</div>
+                                <div
+                                    style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px;">
+                                    <span>You</span>
+                                    <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
+                                    <span>Thunder Strikers</span>
+                                </div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">Court 2</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

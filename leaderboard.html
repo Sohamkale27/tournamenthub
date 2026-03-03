@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TournamentHub | Global Leaderboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-header {
+            padding: 120px 0 60px;
+            text-align: center;
+            background: radial-gradient(circle at top, rgba(57, 255, 20, 0.1) 0%, var(--bg-dark) 70%);
+        }
+
+        .filter-bar {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 40px;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filter-group {
+            display: flex;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+
+        .leaderboard-container {
+            margin-bottom: 80px;
+        }
+
+        .glass-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--glass-border);
+        }
+
+        .glass-table th {
+            text-align: left;
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.6);
+            color: var(--text-muted);
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .glass-table th:hover {
+            color: var(--text-main);
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .glass-table th.sortable::after {
+            content: '↕';
+            margin-left: 8px;
+            opacity: 0.5;
+        }
+
+        .glass-table th.active {
+            color: var(--accent-green);
+        }
+
+        .glass-table td {
+            padding: 20px;
+            background: rgba(20, 20, 20, 0.4);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            transition: var(--transition);
+        }
+
+        .glass-table tbody tr:hover td {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .glass-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .rank {
+            font-weight: 800;
+            font-size: 1.2rem;
+            width: 60px;
+            text-align: center;
+        }
+
+        .team-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .team-logo {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #fff;
+            color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.8rem;
+            font-weight: 700;
+        }
+
+        /* Top 3 Highlight */
+        .row-gold td {
+            background: rgba(255, 215, 0, 0.05);
+        }
+
+        .row-gold .rank {
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.4);
+        }
+
+        .row-silver td {
+            background: rgba(192, 192, 192, 0.05);
+        }
+
+        .row-silver .rank {
+            color: #c0c0c0;
+            text-shadow: 0 0 10px rgba(192, 192, 192, 0.4);
+        }
+
+        .row-bronze td {
+            background: rgba(205, 127, 50, 0.05);
+        }
+
+        .row-bronze .rank {
+            color: #cd7f32;
+            text-shadow: 0 0 10px rgba(205, 127, 50, 0.4);
+        }
+
+        .points {
+            color: var(--accent-green);
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Navbar -->
+    <nav class="navbar glass">
+        <div class="logo">
+            <span style="font-size: 1.5rem;">🏆</span> Tournament<span class="text-accent">Hub</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="matches.html">Tournaments</a></li>
+            <li><a href="leaderboard.html" class="active">Leaderboard</a></li>
+            <li><a href="index.html#about">About</a></li>
+        </ul>
+        <div class="nav-actions">
+            <a href="participant-dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <header class="page-header">
+        <div class="container fade-in-up">
+            <h2>Global <span class="text-accent">Rankings</span></h2>
+            <p>See where you stand among the best players and teams.</p>
+        </div>
+    </header>
+
+    <main class="container leaderboard-container fade-in">
+        <div class="filter-bar">
+            <div class="input-group" style="margin-bottom: 0; min-width: 300px;">
+                <input type="text" id="searchInput" class="glass-input" placeholder="Search team or player...">
+            </div>
+            <div class="filter-group">
+                <select class="glass-input" style="width: auto;">
+                    <option>All Sports</option>
+                    <option>Football</option>
+                    <option>Cricket</option>
+                    <option>Esports</option>
+                </select>
+                <select class="glass-input" style="width: auto;">
+                    <option>Global</option>
+                    <option>Pune</option>
+                    <option>Mumbai</option>
+                </select>
+            </div>
+        </div>
+
+        <div style="overflow-x: auto;">
+            <table class="glass-table" id="leaderboardTable">
+                <thead>
+                    <tr>
+                        <th class="sortable active">Rank</th>
+                        <th>Team Name</th>
+                        <th class="sortable">Matches Played</th>
+                        <th class="sortable">Wins</th>
+                        <th class="sortable">Losses</th>
+                        <th class="sortable">Goal Diff (GD)</th>
+                        <th class="sortable">Points</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="row-gold">
+                        <td class="rank">#1</td>
+                        <td>
+                            <div class="team-info">
+                                <div class="team-logo">TI</div>
+                                Titans FC
+                            </div>
+                        </td>
+                        <td>12</td>
+                        <td>10</td>
+                        <td>1</td>
+                        <td>+18</td>
+                        <td class="points">31</td>
+                    </tr>
+                    <tr class="row-silver">
+                        <td class="rank">#2</td>
+                        <td>
+                            <div class="team-info">
+                                <div class="team-logo" style="background: var(--accent-green);">SP</div>
+                                Spartans SC
+                            </div>
+                        </td>
+                        <td>12</td>
+                        <td>9</td>
+                        <td>2</td>
+                        <td>+14</td>
+                        <td class="points">28</td>
+                    </tr>
+                    <tr class="row-bronze">
+                        <td class="rank">#3</td>
+                        <td>
+                            <div class="team-info">
+                                <div class="team-logo">IW</div>
+                                Iron Wolves
+                            </div>
+                        </td>
+                        <td>12</td>
+                        <td>8</td>
+                        <td>3</td>
+                        <td>+8</td>
+                        <td class="points">25</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">#4</td>
+                        <td>
+                            <div class="team-info">
+                                <div class="team-logo">KX</div>
+                                Kings XI
+                            </div>
+                        </td>
+                        <td>11</td>
+                        <td>7</td>
+                        <td>3</td>
+                        <td>+5</td>
+                        <td class="points">22</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">#5</td>
+                        <td>
+                            <div class="team-info">
+                                <div class="team-logo">RC</div>
+                                Royal City
+                            </div>
+                        </td>
+                        <td>12</td>
+                        <td>5</td>
+                        পূর্ববাংলার5 <td>-2</td>
+                        <td class="points">17</td>
+                    </tr>
+                    <tr>
+                        <td class="rank">#6</td>
+                        <td>
+                            <div class="team-info">
+                                <div class="team-logo">NT</div>
+                                Neon Tigers
+                            </div>
+                        </td>
+                        <td>11</td>
+                        <td>4</td>
+                        <td>6</td>
+                        <td>-5</td>
+                        <td class="points">13</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div>
+                    <a href="#" class="footer-logo">🏆 Tournament<span class="text-accent">Hub</span></a>
+                    <p>The premium sports management platform for modern communities and colleges to organize and track
+                        progress efficiently.</p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                &copy; 2026 TournamentHub. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Sort behavior logic (basic simulation)
+        const headers = document.querySelectorAll('th.sortable');
+        headers.forEach(header => {
+            header.addEventListener('click', () => {
+                headers.forEach(h => h.classList.remove('active'));
+                header.classList.add('active');
+            });
+        });
+
+        // Search feature simulation
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#leaderboardTable tbody tr');
+
+            rows.forEach(row => {
+                const teamName = row.querySelector('.team-info').textContent.toLowerCase();
+                if (teamName.includes(filter)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

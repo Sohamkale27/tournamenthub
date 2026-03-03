@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TournamentHub | Match Center</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .page-header {
+            padding: 120px 0 60px;
+            text-align: center;
+            background: linear-gradient(135deg, rgba(57, 255, 20, 0.05) 0%, var(--bg-dark) 100%);
+        }
+
+        .matches-container {
+            margin-bottom: 80px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .tab-btn {
+            padding: 12px 24px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tab-btn.active {
+            background: rgba(57, 255, 20, 0.1);
+            color: var(--accent-green);
+            border-color: var(--accent-green);
+            box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        .tab-content {
+            display: none;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 30px;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .tab-content.active {
+            display: grid;
+        }
+
+        .match-card {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .match-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .match-teams {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .team {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            width: 40%;
+            text-align: center;
+        }
+
+        .team-logo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            font-weight: 800;
+        }
+
+        .team-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .match-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            width: 20%;
+        }
+
+        .score-text {
+            font-size: 2rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        .match-vs {
+            font-size: 1.2rem;
+            color: var(--text-muted);
+            font-weight: 700;
+        }
+
+        .match-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 16px;
+            border-top: 1px solid var(--glass-border);
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar glass">
+        <div class="logo">
+            <span style="font-size: 1.5rem;">🏆</span> Tournament<span class="text-accent">Hub</span>
+        </div>
+        <ul class="nav-links">
+            <li><a href="index.html">Home</a></li>
+            <li><a href="matches.html" class="active">Tournaments</a></li>
+            <li><a href="leaderboard.html">Leaderboard</a></li>
+            <li><a href="index.html#about">About</a></li>
+        </ul>
+        <div class="nav-actions">
+            <a href="participant-dashboard.html" class="btn btn-secondary btn-sm">Dashboard</a>
+        </div>
+    </nav>
+
+    <header class="page-header">
+        <div class="container fade-in-up">
+            <h2>Match <span class="text-accent">Center</span></h2>
+            <p>Catch all the action, fixtures, and results in one place.</p>
+        </div>
+    </header>
+
+    <main class="container matches-container fade-in">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="live">Live Matches</button>
+            <button class="tab-btn" data-tab="upcoming">Upcoming</button>
+            <button class="tab-btn" data-tab="previous">Previous</button>
+        </div>
+
+        <!-- Live Matches Tab -->
+        <div class="tab-content active" id="tab-live">
+            <div class="glass-card match-card">
+                <div class="match-header">
+                    <span>Football League - Round 4</span>
+                    <span class="badge badge-live">Live - 65'</span>
+                </div>
+                <div class="match-teams">
+                    <div class="team">
+                        <div class="team-logo">TI</div>
+                        <span class="team-name text-accent">Titans FC</span>
+                    </div>
+                    <div class="match-score">
+                        <div class="score-text">2 - 1</div>
+                    </div>
+                    <div class="team">
+                        <div class="team-logo">RC</div>
+                        <span class="team-name">Royal City</span>
+                    </div>
+                </div>
+                <div class="match-footer">
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">📍 Main Stadium</span>
+                    <a href="#" class="btn btn-primary btn-sm">Match Details</a>
+                </div>
+            </div>
+
+            <div class="glass-card match-card">
+                <div class="match-header">
+                    <span>Basketball Open Cup - QF</span>
+                    <span class="badge badge-live">Live - Q3</span>
+                </div>
+                <div class="match-teams">
+                    <div class="team">
+                        <div class="team-logo">HM</div>
+                        <span class="team-name text-accent">Hoops Master</span>
+                    </div>
+                    <div class="match-score">
+                        <div class="score-text">72 - 68</div>
+                    </div>
+                    <div class="team">
+                        <div class="team-logo">DS</div>
+                        <span class="team-name">Dunk Squad</span>
+                    </div>
+                </div>
+                <div class="match-footer">
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">📍 Indoor Arena 1</span>
+                    <a href="#" class="btn btn-primary btn-sm">Match Details</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upcoming Matches Tab -->
+        <div class="tab-content" id="tab-upcoming">
+            <div class="glass-card match-card">
+                <div class="match-header">
+                    <span>Cricket T20 League</span>
+                    <span class="badge badge-upcoming">Oct 12 • 10:00 AM</span>
+                </div>
+                <div class="match-teams">
+                    <div class="team">
+                        <div class="team-logo">IW</div>
+                        <span class="team-name">Iron Wolves</span>
+                    </div>
+                    <div class="match-score">
+                        <div class="match-vs">VS</div>
+                    </div>
+                    <div class="team">
+                        <div class="team-logo">TS</div>
+                        <span class="team-name">Thunder Strikers</span>
+                    </div>
+                </div>
+                <div class="match-footer">
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">📍 Oval Ground</span>
+                    <a href="#" class="btn btn-secondary btn-sm">Set Reminder</a>
+                </div>
+            </div>
+
+            <div class="glass-card match-card">
+                <div class="match-header">
+                    <span>Tennis Masters Singles</span>
+                    <span class="badge badge-upcoming">Oct 14 • 14:00 PM</span>
+                </div>
+                <div class="match-teams">
+                    <div class="team">
+                        <div class="team-logo">AP</div>
+                        <span class="team-name">Alex P.</span>
+                    </div>
+                    <div class="match-score">
+                        <div class="match-vs">VS</div>
+                    </div>
+                    <div class="team">
+                        <div class="team-logo">SJ</div>
+                        <span class="team-name">Sam J.</span>
+                    </div>
+                </div>
+                <div class="match-footer">
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">📍 Court 4</span>
+                    <a href="#" class="btn btn-secondary btn-sm">Set Reminder</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Previous Matches Tab -->
+        <div class="tab-content" id="tab-previous">
+            <div class="glass-card match-card">
+                <div class="match-header">
+                    <span>Football League - Round 3</span>
+                    <span class="badge badge-completed">Jul 10, 2026</span>
+                </div>
+                <div class="match-teams">
+                    <div class="team">
+                        <div class="team-logo">SP</div>
+                        <span class="team-name">Spartans SC</span>
+                    </div>
+                    <div class="match-score">
+                        <div class="score-text text-accent">3 - 0</div>
+                    </div>
+                    <div class="team">
+                        <div class="team-logo">NT</div>
+                        <span class="team-name" style="color: var(--text-muted);">Neon Tigers</span>
+                    </div>
+                </div>
+                <div class="match-footer">
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">📍 East Stadium</span>
+                    <a href="#" class="btn btn-secondary btn-sm">View Stats</a>
+                </div>
+            </div>
+
+            <div class="glass-card match-card">
+                <div class="match-header">
+                    <span>Cricket T20 League</span>
+                    <span class="badge badge-completed">Jul 08, 2026</span>
+                </div>
+                <div class="match-teams">
+                    <div class="team">
+                        <div class="team-logo">KX</div>
+                        <span class="team-name text-accent">Kings XI</span>
+                    </div>
+                    <div class="match-score">
+                        <div style="font-weight: 700;">Won by 4 wickets</div>
+                    </div>
+                    <div class="team">
+                        <div class="team-logo">IW</div>
+                        <span class="team-name" style="color: var(--text-muted);">Iron Wolves</span>
+                    </div>
+                </div>
+                <div class="match-footer">
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">📍 Oval Ground</span>
+                    <a href="#" class="btn btn-secondary btn-sm">View Scorecard</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer"
+        style="background: var(--bg-card); border-top: 1px solid var(--glass-border); padding: 40px 0 20px;">
+        <div class="container">
+            <div class="footer-bottom" style="text-align: center; font-size: 0.9rem; color: var(--text-muted);">
+                &copy; 2026 TournamentHub. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+    <script>
+        // Tab switching logic
+        const tabBtns = document.querySelectorAll('.tab-btn');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Remove active class from all buttons and contents
+                tabBtns.forEach(b => b.classList.remove('active'));
+                tabContents.forEach(c => c.classList.remove('active'));
+
+                // Add active class to clicked button and corresponding content
+                btn.classList.add('active');
+                const targetId = `tab-${btn.getAttribute('data-tab')}`;
+                document.getElementById(targetId).classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>
