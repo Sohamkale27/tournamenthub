@@ -44,7 +44,8 @@ const getTournaments = async (req, res) => {
 
         const tournaments = await Tournament.find(query)
             .populate('organizerId', 'name email')
-            .populate('registeredParticipants', 'name email');
+            .populate('participants.user', 'name email');
+
         res.status(200).json(tournaments);
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
@@ -60,7 +61,7 @@ const getMyTournaments = async (req, res) => {
             return res.status(401).json({ message: 'User not authorized' });
         }
         const tournaments = await Tournament.find({
-            registeredParticipants: req.user._id
+            'participants.user': req.user._id
         }).populate('organizerId', 'name email');
 
         return res.status(200).json(tournaments || []);
@@ -75,7 +76,9 @@ const getMyTournaments = async (req, res) => {
 // @access  Public
 const getTournamentById = async (req, res) => {
     try {
-        const tournament = await Tournament.findById(req.params.id).populate('organizerId', 'name email');
+        const tournament = await Tournament.findById(req.params.id)
+            .populate('organizerId', 'name email')
+            .populate('participants.user', 'name email');
         if (!tournament) {
             return res.status(404).json({ message: 'Tournament not found' });
         }
@@ -96,12 +99,10 @@ const deleteTournament = async (req, res) => {
             return res.status(404).json({ message: 'Tournament not found' });
         }
 
-        // Check for user
         if (!req.user) {
             return res.status(401).json({ message: 'User not found' });
         }
 
-        // Make sure the logged in user matches the tournament organizer
         if (tournament.organizerId.toString() !== req.user.id) {
             return res.status(401).json({ message: 'User not authorized' });
         }
@@ -114,71 +115,75 @@ const deleteTournament = async (req, res) => {
     }
 };
 
-// @desc    Join tournament
+// @desc    Join tournament and receive a coupon code
 // @route   POST /api/tournaments/:id/join
 // @access  Private (Participant)
 const joinTournament = async (req, res) => {
     try {
-        const tournamentId = req.params.id;
-        const tournament = await Tournament.findById(tournamentId);
+        const tournament = await Tournament.findById(req.params.id);
 
         if (!tournament) {
-            return res.status(404).json({ message: 'Tournament not found' });
+            return res.status(404).json({ message: "Tournament not found" });
         }
 
-        const userId = req.user && (req.user.id || req.user._id);
+        const userId = req.user.id || req.user._id;
 
         if (!userId) {
-            return res.status(401).json({ message: 'User not authenticated' });
+            return res.status(401).json({ message: "Unauthorized" });
         }
 
-        // Only participants can join
-        if (req.user.role !== 'participant') {
-            return res.status(403).json({ message: 'Only participants can join tournaments' });
-        }
-
-        if (!tournament.registeredParticipants) {
-            tournament.registeredParticipants = [];
-        }
+        const participants = tournament.participants || [];
 
         // Check if already joined
-        if (tournament.registeredParticipants.includes(userId)) {
-            return res.status(400).json({ message: 'Already joined' });
+        const alreadyJoined = participants.some(
+            (p) => p.user.toString() === userId.toString()
+        );
+        if (alreadyJoined) {
+            return res.status(400).json({ message: "You have already joined this tournament" });
         }
 
-        // Check if full
-        if (tournament.registeredParticipants.length >= tournament.maxParticipants) {
-            return res.status(400).json({ message: 'Tournament full' });
+        const maxParticipants = tournament.maxParticipants || 16;
+        if (participants.length >= maxParticipants) {
+            return res.status(400).json({ message: "Tournament is full" });
         }
 
-        // Create booking
-        let booking = null;
-        try {
-            const tokenCode = 'TKN-' + Math.floor(10000 + Math.random() * 90000);
-            booking = await Booking.create({
-                userId: userId,
-                tournamentId: tournament._id,
-                tokenCode,
+        // Generate a unique coupon code
+        const couponCode = "THUB-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+        // Push participant entry — use $push to avoid full-document validation
+        await Tournament.findByIdAndUpdate(
+            req.params.id,
+            { $push: { participants: { user: userId, couponCode } } },
+            { new: true, runValidators: false }
+        );
+
+        // Build a human-readable date and time from startDate
+        let date = 'TBA';
+        let time = 'TBA';
+        if (tournament.startDate) {
+            const d = new Date(tournament.startDate);
+            date = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
+            time = tournament.matchTime || d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        res.json({
+            success: true,
+            message: "Joined tournament successfully",
+            couponCode,
+            tournament: {
+                _id: tournament._id,
+                name: tournament.name,
                 sport: tournament.sport,
-                venue: tournament.location,
-                matchTime: tournament.matchTime || "TBD"
-            });
-        } catch (bookingError) {
-            console.error("Booking Error:", bookingError);
-            // Optionally continue or fail here. Let's continue to allow joining
-        }
-
-        tournament.registeredParticipants.push(userId);
-        await tournament.save();
-
-        res.status(200).json({
-            message: 'Joined tournament successfully',
-            tournament,
-            booking
+                venue: tournament.location || tournament.venue || 'TBA',
+                city: tournament.city || '',
+                date,
+                time,
+            },
         });
+
     } catch (error) {
         console.error("JOIN ERROR:", error);
-        res.status(500).json({ message: 'Server error', error: error.message });
+        res.status(500).json({ message: "Server error", error: error.message });
     }
 };
 

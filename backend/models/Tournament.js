@@ -1,5 +1,17 @@
 const mongoose = require('mongoose');
 
+const participantSchema = new mongoose.Schema({
+    user: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+        required: true,
+    },
+    couponCode: {
+        type: String,
+        required: true,
+    },
+}, { _id: false });
+
 const tournamentSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -11,19 +23,15 @@ const tournamentSchema = new mongoose.Schema({
     },
     location: {
         type: String,
-        required: true,
     },
     city: {
         type: String,
-        required: true,
     },
     matchTime: {
         type: String,
-        required: true,
     },
     entryFee: {
         type: Number,
-        required: true,
     },
     format: {
         type: String,
@@ -33,17 +41,14 @@ const tournamentSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
-    registeredParticipants: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User'
-    }],
+    participants: [participantSchema],
     maxParticipants: {
         type: Number,
-        default: 16
+        default: 16,
     },
     status: {
         type: String,
-        default: 'upcoming'
+        default: 'upcoming',
     },
     startDate: {
         type: Date,
