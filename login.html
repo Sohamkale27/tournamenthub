@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TournamentHub | Login</title>
+    <title>TournamentHub | Authentication</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
@@ -73,6 +73,9 @@
             margin-top: 10px;
             padding: 14px;
             font-size: 1.1rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
         .auth-footer {
@@ -90,6 +93,23 @@
         .auth-footer a:hover {
             text-decoration: underline;
         }
+
+        .spinner {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 
@@ -99,8 +119,8 @@
             <div class="logo" style="justify-content: center; margin-bottom: 10px;">
                 <span style="font-size: 1.5rem;">🏆</span> Tournament<span class="text-accent">Hub</span>
             </div>
-            <h2>Welcome Back</h2>
-            <p>Enter your details to access your account</p>
+            <h2 id="authTitle">Welcome Back</h2>
+            <p id="authDesc">Enter your details to access your account</p>
         </div>
 
         <div class="role-selector">
@@ -123,11 +143,31 @@
                 </label>
                 <a href="#" class="text-accent">Forgot Password?</a>
             </div>
-            <button type="submit" class="btn btn-primary submit-btn">Sign In</button>
+            <button type="submit" class="btn btn-primary submit-btn" id="loginBtn">Sign In</button>
         </form>
 
-        <div class="auth-footer">
-            Don't have an account? <a href="#">Create Account</a>
+        <form class="auth-form" id="registerForm" style="display: none;">
+            <div class="input-group">
+                <label for="regName">Full Name</label>
+                <input type="text" id="regName" class="glass-input" placeholder="John Doe" required>
+            </div>
+            <div class="input-group">
+                <label for="regEmail">Email Address</label>
+                <input type="email" id="regEmail" class="glass-input" placeholder="player@example.com" required>
+            </div>
+            <div class="input-group">
+                <label for="regPassword">Password</label>
+                <input type="password" id="regPassword" class="glass-input" placeholder="••••••••" required
+                    minlength="6">
+            </div>
+            <button type="submit" class="btn btn-primary submit-btn" id="registerBtn">Create Account</button>
+        </form>
+
+        <div class="auth-footer" id="loginFooter">
+            Don't have an account? <a href="#" id="showRegisterBtn">Create Account</a>
+        </div>
+        <div class="auth-footer" id="registerFooter" style="display: none;">
+            Already have an account? <a href="#" id="showLoginBtn">Sign In</a>
         </div>
     </div>
 
@@ -145,20 +185,114 @@
             });
 
             const loginForm = document.getElementById('loginForm');
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                // Add a small delay for animation effect
-                const submitBtn = loginForm.querySelector('.submit-btn');
-                submitBtn.innerHTML = 'Connecting...';
-                submitBtn.style.opacity = '0.8';
+            const registerForm = document.getElementById('registerForm');
+            const showRegisterBtn = document.getElementById('showRegisterBtn');
+            const showLoginBtn = document.getElementById('showLoginBtn');
+            const loginFooter = document.getElementById('loginFooter');
+            const registerFooter = document.getElementById('registerFooter');
+            const authTitle = document.getElementById('authTitle');
+            const authDesc = document.getElementById('authDesc');
 
-                setTimeout(() => {
-                    if (selectedRole === 'participant') {
-                        window.location.href = 'participant-dashboard.html';
+            showRegisterBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                loginForm.style.display = 'none';
+                loginFooter.style.display = 'none';
+                registerForm.style.display = 'flex';
+                registerFooter.style.display = 'block';
+                authTitle.textContent = 'Create Account';
+                authDesc.textContent = 'Sign up to get started';
+            });
+
+            showLoginBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                registerForm.style.display = 'none';
+                registerFooter.style.display = 'none';
+                loginForm.style.display = 'flex';
+                loginFooter.style.display = 'block';
+                authTitle.textContent = 'Welcome Back';
+                authDesc.textContent = 'Enter your details to access your account';
+            });
+
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+
+                const submitBtn = document.getElementById('loginBtn');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="spinner"></span> Connecting...';
+                submitBtn.style.opacity = '0.8';
+                submitBtn.disabled = true;
+
+                try {
+                    const res = await fetch('http://localhost:5000/api/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email, password })
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        localStorage.setItem('token', data.token);
+                        localStorage.setItem('user', JSON.stringify(data));
+
+                        if (data.role === 'organizer') {
+                            window.location.href = 'organizer-dashboard.html';
+                        } else {
+                            window.location.href = 'participant-dashboard.html';
+                        }
                     } else {
-                        window.location.href = 'organizer-dashboard.html';
+                        alert(data.message || 'Login failed');
+                        submitBtn.innerHTML = originalText;
+                        submitBtn.style.opacity = '1';
+                        submitBtn.disabled = false;
                     }
-                }, 800);
+                } catch (error) {
+                    alert('Error connecting to server. Make sure the backend is running.');
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.opacity = '1';
+                    submitBtn.disabled = false;
+                }
+            });
+
+            registerForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const name = document.getElementById('regName').value;
+                const email = document.getElementById('regEmail').value;
+                const password = document.getElementById('regPassword').value;
+
+                const submitBtn = document.getElementById('registerBtn');
+                const originalText = submitBtn.innerHTML;
+                submitBtn.innerHTML = '<span class="spinner"></span> Creating...';
+                submitBtn.style.opacity = '0.8';
+                submitBtn.disabled = true;
+
+                try {
+                    const res = await fetch('http://localhost:5000/api/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name, email, password, role: selectedRole })
+                    });
+
+                    const data = await res.json();
+
+                    if (res.ok) {
+                        alert('Registration successful! Please sign in.');
+                        showLoginBtn.click();
+                        document.getElementById('email').value = email;
+                    } else {
+                        alert(data.message || 'Registration failed');
+                    }
+                } catch (error) {
+                    alert('Error connecting to server. Make sure the backend is running.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.style.opacity = '1';
+                    submitBtn.disabled = false;
+                }
             });
         });
     </script>

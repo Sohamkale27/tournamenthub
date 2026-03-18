@@ -1,0 +1,44 @@
+# TournamentHub Backend Implementation
+
+## Setup & Configuration
+- [ ] Initialize Node.js backend project (`backend` folder)
+- [ ] Install dependencies (express, mongoose, dotenv, cors, bcryptjs, jsonwebtoken)
+- [ ] Setup `server.js` with basic express configuration
+- [ ] Create `.env` file with MongoDB URI, PORT, and JWT_SECRET
+- [ ] Implement `config/db.js` for MongoDB connection
+
+## MongoDB Models
+- [ ] Create `User` model (name, email, password, role)
+- [ ] Create `Tournament` model (name, sport, location, format, numberOfTeams, startDate, organizerId)
+- [ ] Create `Team` model (teamName, players, tournamentId)
+- [ ] Create `Match` model (teamA, teamB, scoreA, scoreB, matchDate, location, status)
+
+## API Development
+### Authentication API
+- [ ] `POST /api/auth/register`
+- [ ] `POST /api/auth/login` (Returns JWT)
+- [ ] Create authentication middleware
+
+### Tournament API
+- [ ] `POST /api/tournaments/create`
+- [ ] `GET /api/tournaments`
+- [ ] `GET /api/tournaments/:id`
+- [ ] `DELETE /api/tournaments/:id`
+
+### Team API
+- [ ] `POST /api/teams/create`
+- [ ] `GET /api/teams/:tournamentId`
+
+### Match & Fixture API
+- [ ] `POST /api/matches/generate-fixtures` (Knockout and Round-robin logic)
+- [ ] `GET /api/matches/:tournamentId`
+- [ ] `PUT /api/matches/update-score`
+
+### Leaderboard API
+- [ ] `GET /api/leaderboard/:tournamentId`
+
+## Frontend Integration
+- [ ] Update frontend authentication flow (login/register)
+- [ ] Update Organizer Dashboard (create tournament, generate fixtures, update scores)
+- [ ] Update Participant Dashboard (view tournaments, view matches, view leaderboard)
+- [ ] Handle CORS and secure API routes in frontend

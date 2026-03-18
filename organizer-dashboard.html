@@ -243,43 +243,41 @@
             <div class="glass-card" style="margin-bottom: 40px;">
                 <h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px;">
                     Create New Tournament</h3>
-                <form class="form-grid">
+                <form class="form-grid" id="createTournamentForm">
                     <div class="input-group">
                         <label>Tournament Name</label>
-                        <input type="text" class="glass-input" placeholder="e.g. Pune Tech League">
+                        <input type="text" id="t-name" class="glass-input" placeholder="e.g. Pune Tech League" required>
                     </div>
                     <div class="input-group">
                         <label>Sport Type</label>
-                        <select class="glass-input">
-                            <option>Football</option>
-                            <option>Cricket</option>
-                            <option>Basketball</option>
-                            <option>Badminton</option>
+                        <select id="t-sport" class="glass-input">
+                            <option value="Football">Football</option>
+                            <option value="Cricket">Cricket</option>
+                            <option value="Basketball">Basketball</option>
+                            <option value="Badminton">Badminton</option>
                         </select>
                     </div>
                     <div class="input-group">
                         <label>Format</label>
-                        <select class="glass-input">
-                            <option>Knockout</option>
-                            <option>Round Robin</option>
-                            <option>League + Knockout</option>
+                        <select id="t-format" class="glass-input">
+                            <option value="knockout">Knockout</option>
+                            <option value="round_robin">Round Robin</option>
                         </select>
                     </div>
                     <div class="input-group">
                         <label>Number of Teams</label>
-                        <input type="number" class="glass-input" min="2" max="64" value="16">
+                        <input type="number" id="t-teams" class="glass-input" min="2" max="64" value="16" required>
                     </div>
                     <div class="input-group">
                         <label>Start Date</label>
-                        <input type="date" class="glass-input">
+                        <input type="date" id="t-date" class="glass-input" required>
                     </div>
                     <div class="input-group">
                         <label>Location</label>
-                        <input type="text" class="glass-input" placeholder="Stadium / Arena">
+                        <input type="text" id="t-location" class="glass-input" placeholder="Stadium / Arena" required>
                     </div>
                     <div style="grid-column: 1 / -1; margin-top: 10px;">
-                        <button type="button" class="btn btn-primary" onclick="alert('Tournament Created!')">Initialize
-                            Tournament</button>
+                        <button type="submit" class="btn btn-primary">Initialize Tournament</button>
                     </div>
                 </form>
             </div>
@@ -376,6 +374,50 @@
     <script>
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            const createForm = document.getElementById('createTournamentForm');
+            createForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const payload = {
+                    name: document.getElementById('t-name').value,
+                    sport: document.getElementById('t-sport').value,
+                    format: document.getElementById('t-format').value,
+                    numberOfTeams: parseInt(document.getElementById('t-teams').value),
+                    startDate: document.getElementById('t-date').value,
+                    location: document.getElementById('t-location').value
+                };
+
+                try {
+                    const res = await fetch('http://localhost:5000/api/tournaments/create', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify(payload)
+                    });
+
+                    const data = await res.json();
+                    if (res.ok) {
+                        alert('Tournament Created Successfully!');
+                        createForm.reset();
+                        // Optional: refresh dashboard or append to list
+                    } else {
+                        alert(data.message || 'Failed to create tournament');
+                    }
+                } catch (error) {
+                    alert('Error connecting to server');
+                }
+            });
+        });
     </script>
 </body>
 

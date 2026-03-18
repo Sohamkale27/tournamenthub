@@ -8,10 +8,62 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+
+    <!-- QRCode.js Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
     <style>
         .dashboard-layout {
             display: flex;
             min-height: 100vh;
+        }
+
+        /* Toast Styles */
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            min-width: 250px;
+            padding: 16px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--accent-green);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transform: translateX(120%);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.success {
+            border-left-color: var(--accent-green);
+        }
+
+        .toast.error {
+            border-left-color: #ff4d4f;
+        }
+
+        .slots-badge {
+            font-size: 0.8rem;
+            padding: 4px 8px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            margin-right: 10px;
         }
 
         /* Sidebar Styles */
@@ -96,6 +148,100 @@
             font-weight: 700;
             font-size: 1.2rem;
             box-shadow: 0 0 15px var(--accent-glow);
+        }
+
+        /* Sports Categories */
+        .sports-scroll {
+            display: flex;
+            overflow-x: auto;
+            gap: 16px;
+            padding-bottom: 15px;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent-green) transparent;
+        }
+
+        .sports-scroll::-webkit-scrollbar {
+            height: 6px;
+        }
+
+        .sports-scroll::-webkit-scrollbar-thumb {
+            background: var(--accent-green);
+            border-radius: 3px;
+        }
+
+        .sport-chip {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            padding: 10px 20px;
+            border-radius: 30px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            color: var(--text-main);
+        }
+
+        .sport-chip:hover,
+        .sport-chip.active {
+            background: rgba(57, 255, 20, 0.15);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .modal-content {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            transform: translateY(20px);
+            transition: transform 0.3s ease;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .modal-close:hover {
+            color: var(--text-main);
         }
 
         /* Main Content Styles */
@@ -231,13 +377,18 @@
                 <span>🏆</span> T<span class="text-accent">Hub</span>
             </div>
             <nav class="sidebar-menu">
-                <a href="participant-dashboard.html" class="menu-item active">Dashboard</a>
-                <a href="#" class="menu-item">My Tournaments</a>
-                <a href="#" class="menu-item">Upcoming Matches</a>
-                <a href="#" class="menu-item">Match History</a>
-                <a href="leaderboard.html" class="menu-item">Leaderboard</a>
-                <a href="#" class="menu-item">Profile</a>
-                <a href="login.html" class="menu-item logout" style="margin-top: auto;">Logout</a>
+                <a href="#" class="menu-item active" onclick="showSection('dashboard', this)">Dashboard</a>
+                <a href="#" class="menu-item" onclick="showSection('my-tournaments', this); fetchMyTournaments();">My
+                    Tournaments</a>
+                <a href="#" class="menu-item"
+                    onclick="showSection('upcoming-matches', this); fetchUpcomingMatches();">Upcoming Matches</a>
+                <a href="#" class="menu-item" onclick="showSection('match-history', this); fetchMatchHistory();">Match
+                    History</a>
+                <a href="#" class="menu-item"
+                    onclick="showSection('leaderboard', this); fetchLeaderboard();">Leaderboard</a>
+                <a href="#" class="menu-item" onclick="showSection('profile', this); loadProfile();">Profile</a>
+                <a href="login.html" class="menu-item logout" style="margin-top: auto;"
+                    onclick="localStorage.removeItem('token'); localStorage.removeItem('user');">Logout</a>
             </nav>
         </aside>
 
@@ -245,140 +396,840 @@
         <main class="main-content fade-in">
             <div class="topbar">
                 <div>
-                    <h2>Hello, <span class="text-accent">Alex</span></h2>
-                    <p>Welcome back to your participant dashboard.</p>
+                    <h2 id="userNameDisplay">Hello, <span class="text-accent">Player</span></h2>
+                    <p id="pageDescription">Welcome back to your participant dashboard.</p>
                 </div>
                 <div class="user-profile">
-                    <button class="btn btn-secondary btn-sm" style="border-radius: 20px;">Edit Profile</button>
-                    <div class="avatar">A</div>
+                    <button class="btn btn-secondary btn-sm" style="border-radius: 20px;"
+                        onclick="showSection('profile', document.querySelectorAll('.menu-item')[5]); loadProfile();">Edit
+                        Profile</button>
+                    <div class="avatar" id="userAvatar">A</div>
                 </div>
             </div>
 
-            <!-- Stats -->
-            <div class="dash-grid">
-                <div class="glass-card stat-card">
-                    <p>Tournaments Active</p>
-                    <h3>2</h3>
-                </div>
-                <div class="glass-card stat-card">
-                    <p>Total Wins</p>
-                    <h3 class="text-accent">14</h3>
-                </div>
-                <div class="glass-card stat-card">
-                    <p>Win Rate</p>
-                    <h3>78%</h3>
-                </div>
-                <div class="glass-card stat-card">
-                    <p>Global Rank</p>
-                    <h3>#142</h3>
-                </div>
-            </div>
-
-            <div class="content-grid">
-                <!-- Left Column -->
-                <div>
-                    <!-- My Registered Tournaments -->
-                    <div class="glass-card" style="margin-bottom: 24px;">
-                        <div class="list-header">
-                            <h3>My Tournaments</h3>
-                            <a href="matches.html" class="text-accent" style="font-size: 0.9rem;">View All</a>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-info">
-                                <h4>Inter-College Football Cup</h4>
-                                <p>Football • Knockout</p>
-                            </div>
-                            <div class="item-action">
-                                <span class="badge badge-live"
-                                    style="margin-bottom: 8px; display: inline-block;">Live</span>
-                                <br>
-                                <a href="#" class="btn btn-secondary btn-sm">Standings</a>
-                            </div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-info">
-                                <h4>Weekend Smash Bros</h4>
-                                <p>Esports • Double Elimination</p>
-                            </div>
-                            <div class="item-action">
-                                <span class="badge badge-upcoming"
-                                    style="margin-bottom: 8px; display: inline-block;">Starts in 2 days</span>
-                                <br>
-                                <a href="#" class="btn btn-secondary btn-sm">Details</a>
-                            </div>
-                        </div>
+            <!-- DASHBOARD SECTION -->
+            <div id="section-dashboard" class="content-section">
+                <!-- Stats -->
+                <div class="dash-grid">
+                    <div class="glass-card stat-card">
+                        <p>Tournaments Active</p>
+                        <h3>2</h3>
                     </div>
-
-                    <!-- Recent Match Results -->
-                    <div class="glass-card">
-                        <div class="list-header">
-                            <h3>Recent Results</h3>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-info">
-                                <h4>Titans FC vs Spartans SC</h4>
-                                <p>Football League • Yesterday</p>
-                            </div>
-                            <div class="item-action" style="display: flex; align-items: center; gap: 16px;">
-                                <div class="score-box">3 - 1</div>
-                                <span class="badge badge-live win"
-                                    style="border: 1px solid var(--accent-green); background: rgba(57, 255, 20, 0.1); animation: none;">Won</span>
-                            </div>
-                        </div>
-                        <div class="list-item">
-                            <div class="item-info">
-                                <h4>Titans FC vs Royal City</h4>
-                                <p>Football League • Last Week</p>
-                            </div>
-                            <div class="item-action" style="display: flex; align-items: center; gap: 16px;">
-                                <div class="score-box">1 - 2</div>
-                                <span class="badge loss"
-                                    style="border: 1px solid #ff4d4f; background: rgba(255, 77, 79, 0.1);">Lost</span>
-                            </div>
-                        </div>
+                    <div class="glass-card stat-card">
+                        <p>Total Wins</p>
+                        <h3 class="text-accent">14</h3>
+                    </div>
+                    <div class="glass-card stat-card">
+                        <p>Win Rate</p>
+                        <h3>78%</h3>
+                    </div>
+                    <div class="glass-card stat-card">
+                        <p>Global Rank</p>
+                        <h3>#142</h3>
                     </div>
                 </div>
 
-                <!-- Right Column -->
-                <div>
-                    <!-- Upcoming Matches -->
-                    <div class="glass-card">
-                        <div class="list-header">
-                            <h3>Upcoming Matches</h3>
-                        </div>
-                        <div style="display: flex; flex-direction: column; gap: 16px;">
-                            <div
-                                style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border-left: 3px solid var(--accent-green);">
-                                <div
-                                    style="font-size: 0.8rem; color: var(--accent-green); margin-bottom: 8px; font-weight: 600;">
-                                    TOMORROW • 16:00</div>
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px;">
-                                    <span>You</span>
-                                    <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
-                                    <span>Iron Wolves</span>
+                <div class="content-grid">
+                    <!-- Left Column -->
+                    <div>
+                        <!-- My Registered Tournaments -->
+                        <div class="glass-card" style="margin-bottom: 24px;">
+                            <div class="list-header">
+                                <h3>My Tournaments</h3>
+                                <a href="matches.html" class="text-accent" style="font-size: 0.9rem;">View All</a>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-info">
+                                    <h4>Inter-College Football Cup</h4>
+                                    <p>Football • Knockout</p>
                                 </div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);">Main Ground</div>
-                            </div>
-
-                            <div
-                                style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border-left: 3px solid #ffc107;">
-                                <div style="font-size: 0.8rem; color: #ffc107; margin-bottom: 8px; font-weight: 600;">
-                                    FRI, OCT 12 • 10:00</div>
-                                <div
-                                    style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px;">
-                                    <span>You</span>
-                                    <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
-                                    <span>Thunder Strikers</span>
+                                <div class="item-action">
+                                    <span class="badge badge-live"
+                                        style="margin-bottom: 8px; display: inline-block;">Live</span>
+                                    <br>
+                                    <a href="#" class="btn btn-secondary btn-sm">Standings</a>
                                 </div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);">Court 2</div>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-info">
+                                    <h4>Weekend Smash Bros</h4>
+                                    <p>Esports • Double Elimination</p>
+                                </div>
+                                <div class="item-action">
+                                    <span class="badge badge-upcoming"
+                                        style="margin-bottom: 8px; display: inline-block;">Starts in 2 days</span>
+                                    <br>
+                                    <a href="#" class="btn btn-secondary btn-sm">Details</a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Available Tournaments -->
+                        <div class="glass-card" style="margin-bottom: 24px;">
+                            <div class="list-header"
+                                style="flex-direction: column; align-items: flex-start; gap: 16px; border-bottom: none;">
+                                <h3>Available Tournaments</h3>
+
+                                <!-- Sports Categories -->
+                                <div class="sports-scroll" style="width: 100%;">
+                                    <button class="sport-chip active" onclick="filterBySport('', this)">All
+                                        Sports</button>
+                                    <button class="sport-chip" onclick="filterBySport('Football', this)">⚽
+                                        Football</button>
+                                    <button class="sport-chip" onclick="filterBySport('Cricket', this)">🏏
+                                        Cricket</button>
+                                    <button class="sport-chip" onclick="filterBySport('Basketball', this)">🏀
+                                        Basketball</button>
+                                    <button class="sport-chip" onclick="filterBySport('Tennis', this)">🎾
+                                        Tennis</button>
+                                    <button class="sport-chip" onclick="filterBySport('Badminton', this)">🏸
+                                        Badminton</button>
+                                    <button class="sport-chip" onclick="filterBySport('Volleyball', this)">🏐
+                                        Volleyball</button>
+                                    <button class="sport-chip" onclick="filterBySport('Esports', this)">🎮
+                                        Esports</button>
+                                </div>
+                            </div>
+                            <div id="tournamentsList">
+                                <p style="color: var(--text-muted); padding: 10px;">Loading tournaments...</p>
+                            </div>
+                        </div>
+
+                        <!-- Recent Match Results -->
+                        <div class="glass-card">
+                            <div class="list-header">
+                                <h3>Recent Results</h3>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-info">
+                                    <h4>Titans FC vs Spartans SC</h4>
+                                    <p>Football League • Yesterday</p>
+                                </div>
+                                <div class="item-action" style="display: flex; align-items: center; gap: 16px;">
+                                    <div class="score-box">3 - 1</div>
+                                    <span class="badge badge-live win"
+                                        style="border: 1px solid var(--accent-green); background: rgba(57, 255, 20, 0.1); animation: none;">Won</span>
+                                </div>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-info">
+                                    <h4>Titans FC vs Royal City</h4>
+                                    <p>Football League • Last Week</p>
+                                </div>
+                                <div class="item-action" style="display: flex; align-items: center; gap: 16px;">
+                                    <div class="score-box">1 - 2</div>
+                                    <span class="badge loss"
+                                        style="border: 1px solid #ff4d4f; background: rgba(255, 77, 79, 0.1);">Lost</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div>
+                        <!-- Upcoming Matches -->
+                        <div class="glass-card">
+                            <div class="list-header">
+                                <h3>Upcoming Matches</h3>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <div
+                                    style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border-left: 3px solid var(--accent-green);">
+                                    <div
+                                        style="font-size: 0.8rem; color: var(--accent-green); margin-bottom: 8px; font-weight: 600;">
+                                        TOMORROW • 16:00</div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px;">
+                                        <span>You</span>
+                                        <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
+                                        <span>Iron Wolves</span>
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">Main Ground</div>
+                                </div>
+
+                                <div
+                                    style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border-left: 3px solid #ffc107;">
+                                    <div
+                                        style="font-size: 0.8rem; color: #ffc107; margin-bottom: 8px; font-weight: 600;">
+                                        FRI, OCT 12 • 10:00</div>
+                                    <div
+                                        style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px;">
+                                        <span>You</span>
+                                        <span style="color: var(--text-muted); font-size: 0.8rem;">VS</span>
+                                        <span>Thunder Strikers</span>
+                                    </div>
+                                    <div style="font-size: 0.85rem; color: var(--text-muted);">Court 2</div>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- MY TOURNAMENTS SECTION -->
+            <div id="section-my-tournaments" class="content-section" style="display: none;">
+                <div class="glass-card">
+                    <div class="list-header">
+                        <h3>My Registered Tournaments</h3>
+                    </div>
+                    <div id="myTournamentsList">
+                        <p style="color: var(--text-muted); padding: 10px;">Loading your tournaments...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- UPCOMING MATCHES SECTION -->
+            <div id="section-upcoming-matches" class="content-section" style="display: none;">
+                <div class="glass-card">
+                    <div class="list-header">
+                        <h3>Upcoming Matches</h3>
+                    </div>
+                    <div id="upcomingMatchesList" style="display: flex; flex-direction: column; gap: 16px;">
+                        <p style="color: var(--text-muted); padding: 10px;">Loading upcoming matches...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MATCH HISTORY SECTION -->
+            <div id="section-match-history" class="content-section" style="display: none;">
+                <div class="glass-card">
+                    <div class="list-header">
+                        <h3>Match History</h3>
+                    </div>
+                    <div id="matchHistoryList">
+                        <p style="color: var(--text-muted); padding: 10px;">Loading match history...</p>
+                    </div>
+                </div>
+                <!-- LEADERBOARD SECTION -->
+                <div id="section-leaderboard" class="content-section" style="display: none;">
+                    <div class="glass-card">
+                        <div class="list-header"
+                            style="flex-direction: column; align-items: flex-start; gap: 16px; border-bottom: none;">
+                            <h3>Global Leaderboard</h3>
+
+                            <!-- Leaderboard Sports Categories -->
+                            <div class="sports-scroll" style="width: 100%;">
+                                <button class="sport-chip active" onclick="fetchLeaderboard('', this)">All
+                                    Players</button>
+                                <button class="sport-chip" onclick="fetchLeaderboard('Football', this)">⚽ Top
+                                    Scorers</button>
+                                <button class="sport-chip" onclick="fetchLeaderboard('Cricket', this, 'runs')">🏏 Top
+                                    Batsmen</button>
+                                <button class="sport-chip" onclick="fetchLeaderboard('Cricket', this, 'wickets')">🏏 Top
+                                    Bowlers</button>
+                                <button class="sport-chip" onclick="fetchLeaderboard('Badminton', this)">🏸 Top
+                                    Winners</button>
+                            </div>
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                                <thead>
+                                    <tr style="border-bottom: 1px solid var(--glass-border);">
+                                        <th style="padding: 12px; color: var(--text-muted);">Rank</th>
+                                        <th style="padding: 12px; color: var(--text-muted);">Player</th>
+                                        <th style="padding: 12px; color: var(--text-muted);">Wins</th>
+                                        <th style="padding: 12px; color: var(--text-muted);">Points</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="leaderboardList">
+                                    <tr>
+                                        <td colspan="4" style="padding: 12px; color: var(--text-muted);">Loading
+                                            leaderboard...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROFILE SECTION -->
+                <div id="section-profile" class="content-section" style="display: none;">
+                    <div class="content-grid">
+                        <div class="glass-card">
+                            <div
+                                style="display: flex; flex-direction: column; align-items: center; text-align: center; margin-bottom: 24px;">
+                                <div class="avatar" id="profileAvatar"
+                                    style="width: 100px; height: 100px; font-size: 2.5rem; margin-bottom: 16px;">A</div>
+                                <h3 id="profileName">Player Name</h3>
+                                <p id="profileRole"
+                                    style="color: var(--accent-green); text-transform: uppercase; font-size: 0.8rem; letter-spacing: 1px; margin-top: 4px;">
+                                    Participant</p>
+                            </div>
+
+                            <form class="auth-form" id="profileForm">
+                                <div class="input-group">
+                                    <label for="profName">Full Name</label>
+                                    <input type="text" id="profName" class="glass-input" readonly>
+                                </div>
+                                <div class="input-group">
+                                    <label for="profEmail">Email Address</label>
+                                    <input type="email" id="profEmail" class="glass-input" readonly>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="glass-card">
+                            <div class="list-header">
+                                <h3>Player Stats</h3>
+                            </div>
+                            <div style="display: flex; flex-direction: column; gap: 16px;">
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-muted);">Total Wins</span>
+                                    <span id="profileWins"
+                                        style="font-size: 1.5rem; font-weight: 700; color: var(--accent-green);">0</span>
+                                </div>
+                                <div
+                                    style="background: rgba(255,255,255,0.02); padding: 16px; border-radius: 8px; border: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="color: var(--text-muted);">Total Points</span>
+                                    <span id="profilePoints" style="font-size: 1.5rem; font-weight: 700;">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
         </main>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script>
+        const API_URL = 'http://localhost:5000/api';
+
+        // Show Toast Notification
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            let icon = type === 'success' ? '✅' : '❌';
+
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span>${icon}</span>
+                    <span style="font-size: 0.95rem;">${message}</span>
+                </div>
+            `;
+
+            container.appendChild(toast);
+
+            // Trigger animation
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+
+            // Auto dismiss
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        /* --- NEW MODAL CODE BEGIN --- */
+        function openBookingModal(data) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.id = 'bookingModal';
+
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <button class="modal-close" onclick="closeBookingModal()">×</button>
+                    <h3 style="margin-bottom: 20px; text-align: center; color: var(--accent-green);">Tournament Summary</h3>
+                    
+                    <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <p style="margin-bottom: 8px; font-size: 0.9rem;"><span style="color: var(--text-muted)">Player Name:</span> <strong style="color: #fff;">${data.booking.userId ? 'Participant' : 'Unknown'}</strong></p>
+                        <p style="margin-bottom: 8px; font-size: 0.9rem;"><span style="color: var(--text-muted)">Sport:</span> ${data.booking.sport || 'General'}</p>
+                        <p style="margin-bottom: 8px; font-size: 0.9rem;"><span style="color: var(--text-muted)">Venue:</span> ${data.booking.venue || 'TBA'}</p>
+                        <p style="margin-bottom: 8px; font-size: 0.9rem;"><span style="color: var(--text-muted)">Time:</span> ${data.booking.matchTime || 'TBA'}</p>
+                        <br>
+                        <p style="margin-bottom: 8px; font-size: 0.9rem;"><span style="color: var(--text-muted)">Token:</span> <strong style="color: #fff; letter-spacing: 1px;">${data.booking.tokenCode}</strong></p>
+                    </div>
+
+                    <div style="text-align: center; display: flex; flex-direction: column; align-items: center;">
+                        <div id="qrcode-container" style="background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 10px; display: inline-block;"></div>
+                        <p style="font-size: 0.8rem; color: var(--text-muted);">Show this QR code at the entry</p>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+            // Generate QR Code dynamically using qrcode.js
+            setTimeout(() => {
+                const qrContent = `${data.booking.tokenCode}-${data.tournament._id}-${data.booking.userId}`;
+                new QRCode(document.getElementById("qrcode-container"), {
+                    text: qrContent,
+                    width: 128,
+                    height: 128,
+                    colorDark: "#000000",
+                    colorLight: "#ffffff",
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+
+                // Get correct user name from localstorage to display in player name
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                if (user && user.name) {
+                    const nameRegex = /<strong style="color: #fff;">Participant<\/strong>/;
+                    modal.innerHTML = modal.innerHTML.replace(nameRegex, `<strong style="color: #fff;">${user.name}</strong>`);
+                }
+
+                modal.classList.add('show');
+            }, 50);
+        }
+
+        function closeBookingModal() {
+            const modal = document.getElementById('bookingModal');
+            if (modal) {
+                modal.classList.remove('show');
+                setTimeout(() => modal.remove(), 300);
+            }
+        }
+        /* --- NEW MODAL CODE END --- */
+
+        function getSportEmoji(sport) {
+            const s = sport.toLowerCase();
+            if (s.includes('football') || s.includes('soccer')) return '⚽';
+            if (s.includes('cricket')) return '🏏';
+            if (s.includes('basket')) return '🏀';
+            if (s.includes('tennis')) return '🎾';
+            if (s.includes('volley')) return '🏐';
+            if (s.includes('base')) return '⚾';
+            if (s.includes('badminton')) return '🏸';
+            if (s.includes('esports') || s.includes('gaming')) return '🎮';
+            return '🏅';
+        }
+
+        function getStatusColor(status) {
+            switch (status) {
+                case 'upcoming': return 'badge-upcoming'; // Usually blue or purple
+                case 'ongoing': return 'badge-live'; // Green
+                case 'completed': return 'badge-secondary'; // Grey
+                default: return 'badge-secondary';
+            }
+        }
+
+        function getStatusText(status) {
+            return status.charAt(0).toUpperCase() + status.slice(1);
+        }
+
+        async function joinTournament(id, btnElement) {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                showToast('Please login first', 'error');
+                setTimeout(() => window.location.href = 'login.html', 1500);
+                return;
+            }
+
+            const originalText = btnElement.innerText;
+            btnElement.innerText = 'Processing...';
+            btnElement.disabled = true;
+
+            try {
+                const res = await fetch(`${API_URL}/tournaments/${id}/join`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    showToast('Successfully joined the tournament!', 'success');
+                    btnElement.innerText = 'Joined ✓';
+                    btnElement.className = 'btn btn-sm';
+                    btnElement.style.background = 'rgba(57, 255, 20, 0.2)';
+                    btnElement.style.color = 'var(--accent-green)';
+                    btnElement.style.border = '1px solid var(--accent-green)';
+
+                    // Open booking summary modal
+                    if (data.booking) {
+                        openBookingModal(data);
+                    }
+
+                    setTimeout(() => fetchTournaments(currentSportFilter), 1000); // refresh the list to update slots
+                } else {
+                    showToast(data.message || 'Failed to join tournament', 'error');
+                    btnElement.innerText = originalText;
+                    btnElement.disabled = false;
+                }
+            } catch (error) {
+                showToast('Server error. Please try again.', 'error');
+                btnElement.innerText = originalText;
+                btnElement.disabled = false;
+            }
+        }
+
+        let currentSportFilter = "";
+
+        // Function called by category chips
+        function filterBySport(sport, btnElement) {
+            currentSportFilter = sport;
+
+            // Update active state of chips
+            document.querySelectorAll('.sport-chip').forEach(el => el.classList.remove('active'));
+            if (btnElement) btnElement.classList.add('active');
+
+            fetchTournaments(sport);
+        }
+
+        async function fetchTournaments(sportFilter = "") {
+            const token = localStorage.getItem('token');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+            if (user && user.name) {
+                document.getElementById('userNameDisplay').innerHTML = `Hello, <span class="text-accent">${user.name.split(' ')[0]}</span>`;
+            }
+
+            try {
+                let url = `${API_URL}/tournaments`;
+                if (sportFilter) url += `?sport=${encodeURIComponent(sportFilter)}`;
+
+                console.log('Fetching tournaments from:', url);
+                const res = await fetch(url, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
+                console.log('Response status:', res.status);
+                if (res.ok) {
+                    const tournaments = await res.json();
+                    console.log('Tournaments fetched:', tournaments);
+
+                    const listContainer = document.getElementById('tournamentsList');
+
+                    if (!Array.isArray(tournaments) || tournaments.length === 0) {
+                        listContainer.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">No tournaments available at the moment.</p>';
+                        return;
+                    }
+
+                    let html = '';
+
+                    tournaments.forEach(t => {
+                        const max = t.maxParticipants || 16;
+                        const current = Array.isArray(t.registeredParticipants) ? t.registeredParticipants.length : 0;
+                        const slotsRemaining = Math.max(0, max - current);
+                        const isFull = slotsRemaining === 0;
+
+                        let isJoined = false;
+                        if (user && user.id && t.registeredParticipants) {
+                            // Check if current user's ID is in the registeredParticipants array
+                            // Populate might have changed objects to something else, check if it's object or string
+                            isJoined = t.registeredParticipants.some(p => {
+                                if (typeof p === 'object' && p._id) return p._id === user.id;
+                                return p === user.id;
+                            });
+                        }
+
+                        let btnHtml = '';
+                        if (isJoined) {
+                            btnHtml = `<button class="btn btn-sm" disabled style="background: rgba(255,255,255,0.1); color: var(--text-muted); cursor: not-allowed; border: 1px solid var(--glass-border);">Already Joined</button>`;
+                        } else if (isFull) {
+                            btnHtml = `<button class="btn btn-sm" disabled style="background: rgba(255, 77, 79, 0.1); color: #ff4d4f; border: 1px solid #ff4d4f; cursor: not-allowed;">Tournament Full</button>`;
+                        } else {
+                            btnHtml = `<button onclick="joinTournament('${t._id}', this)" class="btn btn-primary btn-sm">Join Tournament</button>`;
+                        }
+
+                        html += `
+                        <div class="list-item" style="flex-wrap: wrap; gap: 15px;">
+                            <div class="item-info" style="flex: 1; min-width: 200px;">
+                                <h4 style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    ${getSportEmoji(t.sport)} ${t.name}
+                                </h4>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 0.85rem; color: var(--text-muted);">
+                                    <p>🛡️ Sport: <span style="color: #fff;">${t.sport}</span></p>
+                                    <p>📍 Venue: <span style="color: #fff;">${t.location || 'TBA'}</span></p>
+                                    <p>🏙️ City: <span style="color: #fff;">${t.city || 'TBA'}</span></p>
+                                    <p>⏰ Time: <span style="color: #fff;">${t.matchTime || 'TBA'}</span></p>
+                                    <p>🎫 Entry: <span style="color: var(--accent-green); font-weight: bold;">${t.entryFee ? '₹' + t.entryFee : 'Free'}</span></p>
+                                </div>
+                            </div>
+                            <div class="item-action" style="text-align: right; display: flex; flex-direction: column; align-items: flex-end; justify-content: space-between; gap: 10px;">
+                                <div>
+                                    <span class="slots-badge" style="display: block; margin-bottom: 5px;">${slotsRemaining} slot${slotsRemaining !== 1 ? 's' : ''} left</span>
+                                    <span class="badge ${getStatusColor(t.status)}">${getStatusText(t.status)}</span>
+                                </div>
+                                ${btnHtml}
+                            </div>
+                        </div>
+                        `;
+                    });
+
+                    listContainer.innerHTML = html;
+                }
+            } catch (error) {
+                console.error("Failed to fetch tournaments:", error);
+                document.getElementById('tournamentsList').innerHTML = '<p style="color: #ff4d4f; padding: 10px;">Error loading tournaments. Ensure backend is running.</p>';
+            }
+        }
+
+        // --- NAVIGATION LOGIC ---
+        function showSection(sectionId, element) {
+            // Update active sidebar link
+            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            if (element) element.classList.add('active');
+
+            // Hide all sections
+            document.querySelectorAll('.content-section').forEach(el => el.style.display = 'none');
+
+            // Show target section
+            document.getElementById(`section-${sectionId}`).style.display = 'block';
+
+            // Update page description header based on section
+            const desc = document.getElementById('pageDescription');
+            switch (sectionId) {
+                case 'dashboard': desc.innerText = 'Welcome back to your participant dashboard.'; break;
+                case 'my-tournaments': desc.innerText = 'Tournaments you have joined.'; break;
+                case 'upcoming-matches': desc.innerText = 'Your scheduled matches.'; break;
+                case 'match-history': desc.innerText = 'Results from your past matches.'; break;
+                case 'leaderboard': desc.innerText = 'Global player rankings.'; break;
+                case 'profile': desc.innerText = 'Manage your account details.'; break;
+            }
+        }
+
+        function formatDateLabel(dateString) {
+            if (!dateString) return 'TBA';
+            const matchDate = new Date(dateString);
+            const today = new Date();
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+
+            if (matchDate.toDateString() === today.toDateString()) return 'TODAY';
+            if (matchDate.toDateString() === tomorrow.toDateString()) return 'TOMORROW';
+
+            return matchDate.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }).toUpperCase();
+        }
+
+        function formatTime(dateString) {
+            if (!dateString) return 'TBD';
+            return new Date(dateString).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+        }
+
+        // --- FETCH APIs ---
+        async function fetchMyTournaments() {
+            const token = localStorage.getItem('token');
+            const container = document.getElementById('myTournamentsList');
+            container.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">Loading...</p>';
+
+            try {
+                const res = await fetch(`${API_URL}/tournaments/my-tournaments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const tournaments = await res.json();
+                    if (tournaments.length === 0) {
+                        container.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">You haven\'t joined any tournaments yet.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    tournaments.forEach(t => {
+                        html += `
+                        <div class="list-item">
+                            <div class="item-info">
+                                <h4>${getSportEmoji(t.sport)} ${t.name}</h4>
+                                <p>${t.sport} • Organized by ${t.organizerId?.name || 'Unknown'}</p>
+                            </div>
+                            <div class="item-action">
+                                <span class="badge ${getStatusColor(t.status)}" style="margin-bottom: 8px; display: inline-block;">${getStatusText(t.status)}</span>
+                                <br>
+                                <button class="btn btn-secondary btn-sm" onclick="showToast('Details coming soon', 'success')">View Details</button>
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                container.innerHTML = '<p style="color: #ff4d4f; padding: 10px;">Error loading your tournaments.</p>';
+            }
+        }
+
+        async function fetchUpcomingMatches() {
+            const token = localStorage.getItem('token');
+            const container = document.getElementById('upcomingMatchesList');
+            container.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">Loading...</p>';
+
+            try {
+                const res = await fetch(`${API_URL}/matches/upcoming`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const matches = await res.json();
+                    if (matches.length === 0) {
+                        container.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">No upcoming matches scheduled.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    matches.forEach(m => {
+                        const tournamentName = m.tournamentId?.name || 'Tournament';
+                        const location = m.location || m.tournamentId?.location || 'TBD';
+                        const dateLabel = formatDateLabel(m.matchDate);
+                        const timeStr = formatTime(m.matchDate);
+                        const colorClass = dateLabel === 'TODAY' ? 'var(--accent-green)' : (dateLabel === 'TOMORROW' ? '#ffc107' : 'var(--text-main)');
+
+                        html += `
+                        <div style="background: rgba(0,0,0,0.3); padding: 16px; border-radius: 8px; border-left: 3px solid ${colorClass};">
+                            <div style="font-size: 0.8rem; color: ${colorClass}; margin-bottom: 8px; font-weight: 600;">
+                                ${dateLabel} • ${timeStr} | ${tournamentName}
+                            </div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; font-weight: 600; margin-bottom: 8px; font-size: 1.1rem;">
+                                <span>${m.teamA?.teamName || 'TBD'}</span>
+                                <span style="color: var(--text-muted); font-size: 0.8rem; margin: 0 15px;">VS</span>
+                                <span>${m.teamB?.teamName || 'TBD'}</span>
+                            </div>
+                            <div style="font-size: 0.85rem; color: var(--text-muted);">📍 ${location}</div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                container.innerHTML = '<p style="color: #ff4d4f; padding: 10px;">Error loading matches.</p>';
+            }
+        }
+
+        async function fetchMatchHistory() {
+            const token = localStorage.getItem('token');
+            const container = document.getElementById('matchHistoryList');
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            container.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">Loading...</p>';
+
+            try {
+                const res = await fetch(`${API_URL}/matches/history`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (res.ok) {
+                    const matches = await res.json();
+                    if (matches.length === 0) {
+                        container.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">No match history found.</p>';
+                        return;
+                    }
+
+                    let html = '';
+                    matches.forEach(m => {
+                        const tournamentName = m.tournamentId?.name || 'Tournament';
+                        const dateStr = m.matchDate ? new Date(m.matchDate).toLocaleDateString() : 'Finished';
+
+                        // Heuristic to determine win/loss
+                        // In a real app we'd map team to user definitively, assuming teamA/B populated with player names
+                        let badgeHtml = '<span class="badge badge-secondary">Finished</span>';
+                        if (m.scoreA !== m.scoreB) {
+                            // Can't reliably know who "we" are without user team mapping here, so just show results
+                            badgeHtml = `<span class="badge badge-secondary">Completed</span>`;
+                        }
+
+                        // Use scoreSummary if available (custom sport scorecard like 150/4)
+                        let displayedScore = m.scoreSummary ? m.scoreSummary : `${m.scoreA} - ${m.scoreB}`;
+
+                        html += `
+                        <div class="list-item">
+                            <div class="item-info">
+                                <h4>${m.teamA?.teamName || 'Team A'} vs ${m.teamB?.teamName || 'Team B'}</h4>
+                                <p>${tournamentName} • ${dateStr}</p>
+                            </div>
+                            <div class="item-action" style="display: flex; align-items: center; gap: 16px;">
+                                <div class="score-box" ${m.scoreSummary ? 'style="font-size:0.9rem; letter-spacing:1px;"' : ''}>${displayedScore}</div>
+                                ${badgeHtml}
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                container.innerHTML = '<p style="color: #ff4d4f; padding: 10px;">Error loading match history.</p>';
+            }
+        }
+
+        async function fetchLeaderboard(sport = "", btnElement = null, metric = "") {
+
+            if (btnElement) {
+                // Find nearest scroll container to scope active class correctly
+                const container = btnElement.closest('.sports-scroll');
+                if (container) {
+                    container.querySelectorAll('.sport-chip').forEach(el => el.classList.remove('active'));
+                    btnElement.classList.add('active');
+                }
+            }
+
+            const container = document.getElementById('leaderboardList');
+            container.innerHTML = '<tr><td colspan="4" style="padding: 12px; color: var(--text-muted);">Loading...</td></tr>';
+
+            try {
+                let url = `${API_URL}/leaderboard`;
+                if (sport) {
+                    url += `?sport=${encodeURIComponent(sport)}`;
+                    if (metric) url += `&metric=${encodeURIComponent(metric)}`;
+                }
+
+                const res = await fetch(url);
+                if (res.ok) {
+                    const users = await res.json();
+                    if (users.length === 0) {
+                        container.innerHTML = '<tr><td colspan="4" style="padding: 12px; color: var(--text-muted);">Leaderboard empty for this criteria.</td></tr>';
+                        return;
+                    }
+
+                    let statHeader = 'Wins/Pts';
+                    if (sport.toLowerCase() === 'football') statHeader = 'Goals';
+                    if (sport.toLowerCase() === 'cricket' && metric === 'runs') statHeader = 'Runs';
+                    if (sport.toLowerCase() === 'cricket' && metric === 'wickets') statHeader = 'Wickets';
+                    if (sport.toLowerCase() === 'badminton') statHeader = 'Wins';
+
+                    let html = '';
+                    users.forEach((u, index) => {
+                        let dynamicStat = `${u.wins || 0}W / ${u.points || 0}P`;
+
+                        // Parse the stats if sportsStats exist
+                        if (sport && u.sportsStats) {
+                            const s = sport.toLowerCase();
+                            if (s === 'football') dynamicStat = u.sportsStats.football?.goals || 0;
+                            if (s === 'cricket' && metric === 'runs') dynamicStat = u.sportsStats.cricket?.runs || 0;
+                            if (s === 'cricket' && metric === 'wickets') dynamicStat = u.sportsStats.cricket?.wickets || 0;
+                            if (s === 'badminton') dynamicStat = u.sportsStats.badminton?.wins || 0;
+                        }
+
+                        html += `
+                        <tr style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: var(--transition);">
+                            <td style="padding: 16px; font-weight: 700; color: ${index < 3 ? 'var(--accent-green)' : 'var(--text-main)'};">#${index + 1}</td>
+                            <td style="padding: 16px; font-weight: 500;">${u.name}</td>
+                            <td style="padding: 16px;" colspan="2">${dynamicStat} ${sport ? statHeader : ''}</td>
+                        </tr>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (error) {
+                container.innerHTML = '<tr><td colspan="4" style="padding: 12px; color: #ff4d4f;">Error loading leaderboard.</td></tr>';
+            }
+        }
+
+        function loadProfile() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            document.getElementById('profName').value = user.name || '';
+            document.getElementById('profEmail').value = user.email || '';
+            document.getElementById('profileName').innerText = user.name || 'Player';
+
+            if (user.name) {
+                document.getElementById('profileAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
+            // Real wins and points would ideally trigger a fetch to /api/users/me, sticking to info in localstorage/defaults for now.
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchTournaments();
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user && user.name) {
+                document.getElementById('userNameDisplay').innerHTML = `Hello, <span class="text-accent">${user.name.split(' ')[0]}</span>`;
+                document.getElementById('userAvatar').innerText = user.name.charAt(0).toUpperCase();
+            }
+        });
+    </script>
 </body>
 
 </html>

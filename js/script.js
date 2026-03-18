@@ -18,66 +18,95 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // 2. Populate Dashboard Tournaments (Simulation)
+    // 2. Fetch and Populate Dashboard Tournaments
     const tList = document.getElementById('tournament-list');
     if (tList) {
-        const tournaments = [
-            { name: "Valorant Champions Qualifier", date: "Oct 15, 2026", status: "Upcoming", prize: "$5,000" },
-            { name: "CS:GO Masters League", date: "Nov 02, 2026", status: "Registration Open", prize: "$10,000" },
-            { name: "Weekly Smash Brawl", date: "Oct 20, 2026", status: "Upcoming", prize: "$500" }
-        ];
+        tList.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding: 20px;">Loading tournaments...</div>';
 
-        tList.innerHTML = '';
-        tournaments.forEach((t, i) => {
-            // Apply slight stagger animation
-            setTimeout(() => {
-                const div = document.createElement('div');
-                div.className = 'tournament-item fade-in-up';
-                div.innerHTML = `
-                    <div class="t-info">
-                        <h4>${t.name}</h4>
-                        <p>${t.date} • <span style="color: var(--primary-light)">${t.status}</span></p>
-                    </div>
-                    <div class="t-action">
-                        <span style="margin-right: 15px; font-weight: 600;">${t.prize}</span>
-                        <button class="btn btn-secondary btn-sm">Details</button>
-                    </div>
-                `;
-                tList.appendChild(div);
-            }, i * 150);
-        });
+        fetch('http://localhost:5000/api/tournaments')
+            .then(res => res.json())
+            .then(tournaments => {
+                tList.innerHTML = '';
+                if (tournaments.length === 0) {
+                    tList.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding: 20px;">No tournaments available right now.</div>';
+                    return;
+                }
+                tournaments.forEach((t, i) => {
+                    setTimeout(() => {
+                        const div = document.createElement('div');
+                        div.className = 'tournament-item fade-in-up';
+                        const date = new Date(t.startDate).toLocaleDateString();
+                        div.innerHTML = `
+                            <div class="t-info">
+                                <h4>${t.name}</h4>
+                                <p>${date} • <span style="color: var(--primary-light)">${t.sport} (${t.format})</span></p>
+                            </div>
+                            <div class="t-action">
+                                <button class="btn btn-secondary btn-sm" onclick="window.location.href='leaderboard.html?tournamentId=${t._id}'">View Leaderboard</button>
+                            </div>
+                        `;
+                        tList.appendChild(div);
+                    }, i * 150);
+                });
+            })
+            .catch(err => {
+                tList.innerHTML = '<div style="color:#ff4d4f; text-align:center; padding: 20px;">Error loading tournaments.</div>';
+            });
     }
 
-    // 3. Populate Leaderboard (Simulation)
+    // 3. Fetch and Populate Leaderboard Dynamic Data
     const lBody = document.getElementById('leaderboard-body');
     if (lBody) {
-        const players = [
-            { name: "Faker_Fan", game: "League of Legends", winRate: "72.4%", points: 4250 },
-            { name: "S1mple_Aim", game: "CS:GO", winRate: "68.9%", points: 3980 },
-            { name: "TenZ_Clone", game: "Valorant", winRate: "65.2%", points: 3750 },
-            { name: "SmashGod", game: "Super Smash Bros", winRate: "81.0%", points: 3420 },
-            { name: "RocketKing", game: "Rocket League", winRate: "59.5%", points: 3100 },
-        ];
+        const urlParams = new URLSearchParams(window.location.search);
+        const tId = urlParams.get('tournamentId');
 
-        lBody.innerHTML = '';
-        players.forEach((p, index) => {
-            const rank = index + 1;
-            const rankClass = rank <= 3 ? `rank-${rank}` : '';
-            
-            setTimeout(() => {
-                const tr = document.createElement('tr');
-                tr.className = 'fade-in-up';
-                tr.innerHTML = `
-                    <td class="${rankClass}"><span class="rank-badge">${rank}</span></td>
-                    <td style="font-weight: 500;">${p.name}</td>
-                    <td style="color: var(--text-muted);">${p.game}</td>
-                    <td>${p.winRate}</td>
-                    <td style="color: var(--primary-light); font-weight: 600;">${p.points}</td>
-                `;
-                lBody.appendChild(tr);
-            }, index * 100);
-        });
-        
+        if (!tId) {
+            lBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Please select a tournament to view its leaderboard.</td></tr>';
+        } else {
+            lBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading leaderboard...</td></tr>';
+
+            fetch(`http://localhost:5000/api/leaderboard/${tId}`)
+                .then(res => res.json())
+                .then(players => {
+                    lBody.innerHTML = '';
+                    if (players.length === 0) {
+                        lBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">No leaderboard data available for this tournament yet.</td></tr>';
+                        return;
+                    }
+                    players.forEach((p, index) => {
+                        const rank = index + 1;
+                        let rowClass = '';
+                        if (rank === 1) rowClass = 'row-gold';
+                        else if (rank === 2) rowClass = 'row-silver';
+                        else if (rank === 3) rowClass = 'row-bronze';
+
+                        setTimeout(() => {
+                            const tr = document.createElement('tr');
+                            tr.className = rowClass + ' fade-in-up';
+                            const initials = p.teamName.substring(0, 2).toUpperCase();
+                            tr.innerHTML = `
+                                <td class="rank">#${rank}</td>
+                                <td>
+                                    <div class="team-info">
+                                        <div class="team-logo">${initials}</div>
+                                        ${p.teamName}
+                                    </div>
+                                </td>
+                                <td>${p.matchesPlayed}</td>
+                                <td>${p.wins}</td>
+                                <td>${p.losses}</td>
+                                <td>N/A</td> <!-- Goal diff not calculated currently in match model -->
+                                <td class="points">${p.points}</td>
+                            `;
+                            lBody.appendChild(tr);
+                        }, index * 100);
+                    });
+                })
+                .catch(err => {
+                    lBody.innerHTML = '<tr><td colspan="7" style="color:#ff4d4f; text-align:center;">Error loading leaderboard.</td></tr>';
+                });
+        }
+
         // Simple search filter simulation
         const searchInput = document.getElementById('search-player');
         if (searchInput) {
@@ -87,6 +116,41 @@ document.addEventListener('DOMContentLoaded', () => {
                 rows.forEach(row => {
                     const name = row.cells[1].textContent.toLowerCase();
                     row.style.display = name.includes(term) ? '' : 'none';
+                    document.getElementById("createAccountBtn").addEventListener("click", async () => {
+                        const name = prompt("Enter your name:");
+                        const email = prompt("Enter your email:");
+                        const password = prompt("Enter your password:");
+
+                        if (!name || !email || !password) {
+                            alert("All fields required");
+                            return;
+                        }
+
+                        try {
+                            const res = await fetch("http://localhost:5000/api/auth/register", {
+                                method: "POST",
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+                                body: JSON.stringify({
+                                    name,
+                                    email,
+                                    password
+                                })
+                            });
+
+                            const data = await res.json();
+
+                            if (res.ok) {
+                                alert("Account created successfully! Now login.");
+                            } else {
+                                alert(data.message || "Registration failed");
+                            }
+
+                        } catch (err) {
+                            alert("Server error");
+                        }
+                    });
                 });
             });
         }
