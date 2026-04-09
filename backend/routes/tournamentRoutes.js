@@ -7,11 +7,13 @@ const {
     deleteTournament,
     joinTournament,
     getMyTournaments,
+    getOrganizerTournaments,
 } = require('../controllers/tournamentController');
 const { protect } = require('../middleware/authMiddleware');
 
 router.post('/create', protect, createTournament);
 router.get('/my-tournaments', protect, getMyTournaments);
+router.get('/organizer-tournaments', protect, getOrganizerTournaments);
 router.get('/', getTournaments);
 router.get('/:id', getTournamentById);
 router.delete('/:id', protect, deleteTournament);

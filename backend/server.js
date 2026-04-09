@@ -21,11 +21,49 @@ app.use('/api/leaderboard', require('./routes/leaderboardRoutes'));
 
 // Basic Route for testing
 app.get('/', (req, res) => {
-    res.send('TournamentHub API is running...');
+    res.json({
+        message: 'TournamentHub API is running...',
+        version: '2.0',
+        endpoints: [
+            'POST /api/auth/register',
+            'POST /api/auth/login',
+            'GET  /api/auth/me',
+            'GET  /api/tournaments',
+            'POST /api/tournaments/create',
+            'GET  /api/tournaments/my-tournaments',
+            'GET  /api/tournaments/organizer-tournaments',
+            'GET  /api/tournaments/:id',
+            'POST /api/tournaments/:id/join',
+            'DELETE /api/tournaments/:id',
+            'GET  /api/teams/:tournamentId',
+            'POST /api/teams/create',
+            'GET  /api/matches/upcoming',
+            'GET  /api/matches/history',
+            'GET  /api/matches/:tournamentId',
+            'POST /api/matches/generate-fixtures',
+            'PUT  /api/matches/update-score',
+            'GET  /api/leaderboard',
+            'GET  /api/leaderboard/:tournamentId',
+        ]
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ message: `Route ${req.method} ${req.originalUrl} not found` });
+});
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err.stack);
+    res.status(500).json({
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'production' ? 'Something went wrong' : err.message,
+    });
 });
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    console.log(`TournamentHub API v2.0 running on port ${PORT}`);
 });
