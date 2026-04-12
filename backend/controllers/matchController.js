@@ -2,6 +2,30 @@ const Match = require('../models/Match');
 const Team = require('../models/Team');
 const Tournament = require('../models/Tournament');
 
+// Compute status from the match date so fixtures stay demo-ready without manual syncing.
+const getAutoMatchStatus = (matchDate) => {
+    if (!matchDate) return 'upcoming';
+
+    const match = new Date(matchDate);
+    if (Number.isNaN(match.getTime())) return 'upcoming';
+
+    const today = new Date();
+    const matchDay = new Date(match.getFullYear(), match.getMonth(), match.getDate()).getTime();
+    const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+
+    if (matchDay < todayDay) return 'finished';
+    if (matchDay > todayDay) return 'upcoming';
+    return 'live';
+};
+
+const withAutoStatus = (match) => {
+    const plainMatch = typeof match.toObject === 'function' ? match.toObject() : match;
+    return {
+        ...plainMatch,
+        status: getAutoMatchStatus(plainMatch.matchDate),
+    };
+};
+
 // Helper to shuffle array
 const shuffleArray = (array) => {
     for (let i = array.length - 1; i > 0; i--) {
@@ -38,7 +62,7 @@ const generateFixtures = async (req, res) => {
         const teams = await Team.find({ tournamentId });
 
         if (teams.length < 2) {
-            return res.status(400).json({ message: 'Not enough teams to generate fixtures' });
+            return res.status(400).json({ message: 'Please add at least 2 teams to generate fixtures.' });
         }
 
         let matches = [];
@@ -57,6 +81,9 @@ const generateFixtures = async (req, res) => {
                         teamB: shuffledTeams[i + 1]._id,
                         round: 1,
                         matchNumber: matchNumber++,
+                        matchDate: tournament.startDate || undefined,
+                        location: tournament.location || '',
+                        status: getAutoMatchStatus(tournament.startDate),
                     });
                 }
             }
@@ -85,6 +112,9 @@ const generateFixtures = async (req, res) => {
                             teamB: teamB._id,
                             round: round + 1,
                             matchNumber: matchNumber++,
+                            matchDate: tournament.startDate || undefined,
+                            location: tournament.location || '',
+                            status: getAutoMatchStatus(tournament.startDate),
                         });
                     }
                 }
@@ -112,7 +142,7 @@ const getMatches = async (req, res) => {
             .populate('teamB', 'teamName')
             .sort({ round: 1, matchNumber: 1 });
 
-        res.status(200).json(matches);
+        res.status(200).json(matches.map(withAutoStatus));
     } catch (error) {
         res.status(500).json({ message: 'Server error', error: error.message });
     }
@@ -136,14 +166,16 @@ const getUpcomingMatches = async (req, res) => {
 
         const matches = await Match.find({
             $or: [{ teamA: { $in: teamIds } }, { teamB: { $in: teamIds } }],
-            status: { $in: ['upcoming', 'live'] }
         })
             .populate('teamA', 'teamName')
             .populate('teamB', 'teamName')
-            .populate('tournamentId', 'name sport location')
+            .populate('tournamentId', 'name sport location city matchTime')
             .sort({ matchDate: 1 });
 
-        return res.status(200).json(matches || []);
+        const filteredMatches = (matches || []).map(withAutoStatus)
+            .filter(match => ['upcoming', 'live'].includes(match.status));
+
+        return res.status(200).json(filteredMatches);
     } catch (error) {
         console.error("Error in getUpcomingMatches:", error);
         return res.status(500).json({ message: 'Server error', error: error.message });
@@ -168,14 +200,16 @@ const getMatchHistory = async (req, res) => {
 
         const matches = await Match.find({
             $or: [{ teamA: { $in: teamIds } }, { teamB: { $in: teamIds } }],
-            status: 'finished'
         })
             .populate('teamA', 'teamName')
             .populate('teamB', 'teamName')
             .populate('tournamentId', 'name sport')
             .sort({ updatedAt: -1 });
 
-        return res.status(200).json(matches || []);
+        const filteredMatches = (matches || []).map(withAutoStatus)
+            .filter(match => match.status === 'finished');
+
+        return res.status(200).json(filteredMatches);
     } catch (error) {
         console.error("Error in getMatchHistory:", error);
         return res.status(500).json({ message: 'Server error', error: error.message });
@@ -187,7 +221,7 @@ const getMatchHistory = async (req, res) => {
 // @access  Private
 const updateScore = async (req, res) => {
     try {
-        const { matchId, scoreA, scoreB, status } = req.body;
+        const { matchId, scoreA, scoreB } = req.body;
 
         const match = await Match.findById(matchId);
         if (!match) {
@@ -201,9 +235,14 @@ const updateScore = async (req, res) => {
             return res.status(403).json({ message: 'Not authorized to update scores' });
         }
 
+        const autoStatus = getAutoMatchStatus(match.matchDate);
+        if (autoStatus !== 'live') {
+            return res.status(400).json({ message: 'Scores can only be updated for live matches.' });
+        }
+
         match.scoreA = scoreA !== undefined ? scoreA : match.scoreA;
         match.scoreB = scoreB !== undefined ? scoreB : match.scoreB;
-        match.status = status || match.status;
+        match.status = (scoreA !== undefined || scoreB !== undefined) ? 'live' : autoStatus;
 
         const updatedMatch = await match.save();
 

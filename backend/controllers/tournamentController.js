@@ -1,6 +1,25 @@
 const Tournament = require('../models/Tournament');
 const Booking = require('../models/Booking');
 
+// Reuse a single formatter so ticket/join responses always return demo-ready time text.
+const formatTimeToAmPm = (time) => {
+    if (!time) return 'TBA';
+    const [hour, minute] = String(time).split(':');
+    let h = parseInt(hour, 10);
+
+    if (Number.isNaN(h) || minute === undefined) {
+        return 'TBA';
+    }
+
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return `${h}:${minute} ${ampm}`;
+};
+
+const formatVenueLabel = (venue, city) => {
+    return [venue, city].filter(Boolean).join(', ') || 'TBA';
+};
+
 // @desc    Create a new tournament
 // @route   POST /api/tournaments/create
 // @access  Private (Organizer)
@@ -8,27 +27,61 @@ const createTournament = async (req, res) => {
     try {
         const {
             name, sport, location, city, format, numberOfTeams,
-            startDate, entryFee, matchTime, description, maxParticipants
+            startDate, entryFee, matchTime, description, maxParticipants,
+            latitude, longitude
         } = req.body;
 
-        if (!name || !sport || !location || !format || !numberOfTeams || !startDate) {
-            return res.status(400).json({ message: 'Please provide name, sport, location, format, numberOfTeams, and startDate' });
+        if (!name?.trim()) {
+            return res.status(400).json({ message: 'Tournament name is required.' });
+        }
+        if (!sport?.trim()) {
+            return res.status(400).json({ message: 'Sport is required.' });
+        }
+        if (!location?.trim()) {
+            return res.status(400).json({ message: 'Venue is required.' });
+        }
+        if (!city?.trim()) {
+            return res.status(400).json({ message: 'City is required.' });
+        }
+        if (!format) {
+            return res.status(400).json({ message: 'Tournament format is required.' });
+        }
+        if (!numberOfTeams) {
+            return res.status(400).json({ message: 'Number of teams is required.' });
+        }
+        if (!startDate) {
+            return res.status(400).json({ message: 'Start date is required.' });
+        }
+        if (!matchTime?.trim()) {
+            return res.status(400).json({ message: 'Match time is required.' });
         }
 
         if (req.user.role !== 'organizer') {
             return res.status(403).json({ message: 'Not authorized, organizers only' });
         }
 
+        const parsedLatitude = latitude !== undefined && latitude !== null && latitude !== ''
+            ? Number(latitude)
+            : null;
+        const parsedLongitude = longitude !== undefined && longitude !== null && longitude !== ''
+            ? Number(longitude)
+            : null;
+        const hasCoordinates = Number.isFinite(parsedLatitude) && Number.isFinite(parsedLongitude);
+
         const tournament = await Tournament.create({
-            name,
-            sport,
-            location,
-            city: city || '',
+            name: name.trim(),
+            sport: sport.trim(),
+            location: location.trim(),
+            city: city.trim(),
+            coordinates: hasCoordinates ? {
+                lat: parsedLatitude,
+                lng: parsedLongitude,
+            } : undefined,
             format,
             numberOfTeams: parseInt(numberOfTeams),
             startDate,
             entryFee: entryFee || 0,
-            matchTime: matchTime || '',
+            matchTime: matchTime.trim(),
             description: description || '',
             maxParticipants: maxParticipants || parseInt(numberOfTeams) || 16,
             organizerId: req.user.id,
@@ -101,6 +154,47 @@ const getOrganizerTournaments = async (req, res) => {
         return res.status(200).json(tournaments || []);
     } catch (error) {
         console.error('Error in getOrganizerTournaments:', error);
+        return res.status(500).json({ message: 'Server error', error: error.message });
+    }
+};
+
+// @desc    Get ticket details by coupon code
+// @route   GET /api/tournaments/ticket/:coupon
+// @access  Public
+const getTicketByCoupon = async (req, res) => {
+    try {
+        const tournament = await Tournament.findOne({
+            'participants.couponCode': req.params.coupon
+        }).populate('participants.user', 'name');
+
+        if (!tournament) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        const participant = (tournament.participants || []).find(
+            (entry) => entry.couponCode === req.params.coupon
+        );
+
+        if (!participant) {
+            return res.status(404).json({ message: 'Ticket not found' });
+        }
+
+        return res.status(200).json({
+            couponCode: participant.couponCode,
+            player: participant.user?.name || 'Participant',
+            tournament: {
+                name: tournament.name,
+                sport: tournament.sport,
+                venue: tournament.location || 'TBA',
+                city: tournament.city || '',
+                venueLabel: formatVenueLabel(tournament.location || '', tournament.city || ''),
+                date: tournament.startDate
+                    ? new Date(tournament.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                    : 'TBA',
+                time: formatTimeToAmPm(tournament.matchTime),
+            },
+        });
+    } catch (error) {
         return res.status(500).json({ message: 'Server error', error: error.message });
     }
 };
@@ -197,7 +291,7 @@ const joinTournament = async (req, res) => {
         if (tournament.startDate) {
             const d = new Date(tournament.startDate);
             date = d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-            time = tournament.matchTime || d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+            time = formatTimeToAmPm(tournament.matchTime) || d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
         }
 
         res.json({
@@ -210,8 +304,11 @@ const joinTournament = async (req, res) => {
                 sport: tournament.sport,
                 venue: tournament.location || tournament.venue || 'TBA',
                 city: tournament.city || '',
+                venueLabel: formatVenueLabel(tournament.location || tournament.venue || '', tournament.city || ''),
                 date,
                 time,
+                startDate: tournament.startDate,
+                matchTime: tournament.matchTime || '',
             },
         });
 
@@ -229,4 +326,5 @@ module.exports = {
     joinTournament,
     getMyTournaments,
     getOrganizerTournaments,
+    getTicketByCoupon,
 };

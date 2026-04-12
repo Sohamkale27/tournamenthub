@@ -27,6 +27,14 @@ const tournamentSchema = new mongoose.Schema({
     city: {
         type: String,
     },
+    coordinates: {
+        lat: {
+            type: Number,
+        },
+        lng: {
+            type: Number,
+        },
+    },
     matchTime: {
         type: String,
     },
