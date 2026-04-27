@@ -14,6 +14,40 @@
             min-height: 100vh;
         }
 
+        #toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .toast {
+            min-width: 250px;
+            padding: 16px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(10px);
+            border-left: 4px solid var(--accent-green);
+            color: #fff;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            transform: translateX(120%);
+            transition: transform 0.3s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+        }
+
+        .toast.error {
+            border-left-color: #ff4d4f;
+        }
+
         .sidebar {
             width: 280px;
             background: var(--bg-card);
@@ -86,13 +120,14 @@
             width: 50px;
             height: 50px;
             border-radius: 50%;
-            background: #fff;
+            background: var(--accent-green);
             color: #000;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
             font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--accent-glow);
         }
 
         .main-content {
@@ -170,6 +205,37 @@
             color: #fff;
         }
 
+        .stat-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 32px;
+        }
+
+        .stat-mini {
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        .stat-mini p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .stat-mini h3 {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .tournament-selector {
+            margin-bottom: 20px;
+        }
+
         @media (max-width: 900px) {
             .dashboard-layout {
                 flex-direction: column;
@@ -214,15 +280,14 @@
                 <span>🏆</span> T<span class="text-accent">Hub</span>
             </div>
             <nav class="sidebar-menu">
-                <a href="organizer-dashboard.html" class="menu-item active">Dashboard</a>
-                <a href="#" class="menu-item">Create Tournament</a>
-                <a href="#" class="menu-item">Manage Teams</a>
-                <a href="#" class="menu-item">Generate Fixtures</a>
-                <a href="#" class="menu-item" onclick="openModal('scoreModal')">Update Scores</a>
-                <a href="leaderboard.html" class="menu-item">View Leaderboard</a>
-                <a href="matches.html" class="menu-item">Match Records</a>
-                <a href="#" class="menu-item">Settings</a>
-                <a href="login.html" class="menu-item logout">Logout</a>
+                <a href="#" class="menu-item active" onclick="showSection('dashboard', this)">📊 Dashboard</a>
+                <a href="#" class="menu-item" onclick="showSection('create', this)">➕ Create Tournament</a>
+                <a href="#" class="menu-item" onclick="showSection('fixtures', this); loadFixtures();">📋 Fixtures &
+                    Results</a>
+                <a href="#" class="menu-item" onclick="openModal('scoreModal')">✏️ Update Score</a>
+                <a href="#" class="menu-item" onclick="showSection('teams', this)">👥 Manage Teams</a>
+                <a href="login.html" class="menu-item logout"
+                    onclick="localStorage.removeItem('token'); localStorage.removeItem('user');">Logout</a>
             </nav>
         </aside>
 
@@ -231,172 +296,720 @@
             <div class="topbar">
                 <div>
                     <h2>Organizer <span class="text-accent">Panel</span></h2>
-                    <p>Manage your tournaments efficiently.</p>
+                    <p id="orgSubtitle">Manage your tournaments efficiently.</p>
                 </div>
                 <div class="user-profile">
-                    <button class="btn btn-secondary btn-sm" style="border-radius: 20px;">Settings</button>
-                    <div class="avatar">O</div>
+                    <div id="orgAvatar" class="avatar">O</div>
                 </div>
             </div>
 
-            <!-- Create Tournament Form -->
-            <div class="glass-card" style="margin-bottom: 40px;">
-                <h3 style="margin-bottom: 24px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px;">
-                    Create New Tournament</h3>
-                <form class="form-grid" id="createTournamentForm">
-                    <div class="input-group">
-                        <label>Tournament Name</label>
-                        <input type="text" id="t-name" class="glass-input" placeholder="e.g. Pune Tech League" required>
+            <!-- DASHBOARD OVERVIEW SECTION -->
+            <div id="section-dashboard">
+                <div class="stat-row">
+                    <div class="stat-mini">
+                        <p>My Tournaments</p>
+                        <h3 id="orgStatTotal">—</h3>
                     </div>
-                    <div class="input-group">
-                        <label>Sport Type</label>
-                        <select id="t-sport" class="glass-input">
-                            <option value="Football">Football</option>
-                            <option value="Cricket">Cricket</option>
-                            <option value="Basketball">Basketball</option>
-                            <option value="Badminton">Badminton</option>
-                        </select>
+                    <div class="stat-mini">
+                        <p>Live Now</p>
+                        <h3 id="orgStatLive" style="color: var(--accent-green);">—</h3>
                     </div>
-                    <div class="input-group">
-                        <label>Format</label>
-                        <select id="t-format" class="glass-input">
-                            <option value="knockout">Knockout</option>
-                            <option value="round_robin">Round Robin</option>
-                        </select>
+                    <div class="stat-mini">
+                        <p>Upcoming</p>
+                        <h3 id="orgStatUpcoming" style="color: #ffc107;">—</h3>
                     </div>
-                    <div class="input-group">
-                        <label>Number of Teams</label>
-                        <input type="number" id="t-teams" class="glass-input" min="2" max="64" value="16" required>
+                    <div class="stat-mini">
+                        <p>Completed</p>
+                        <h3 id="orgStatCompleted" style="color: var(--text-muted);">—</h3>
                     </div>
-                    <div class="input-group">
-                        <label>Start Date</label>
-                        <input type="date" id="t-date" class="glass-input" required>
+                </div>
+
+                <!-- My Tournaments List -->
+                <div class="glass-card">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+                        <h3>My Tournaments</h3>
+                        <button class="btn btn-primary btn-sm"
+                            onclick="showSection('create', document.querySelectorAll('.menu-item')[1])">+ New</button>
                     </div>
-                    <div class="input-group">
-                        <label>Location</label>
-                        <input type="text" id="t-location" class="glass-input" placeholder="Stadium / Arena" required>
+                    <div id="orgTournamentsList">
+                        <p style="color: var(--text-muted); padding: 10px;">Loading your tournaments...</p>
                     </div>
-                    <div style="grid-column: 1 / -1; margin-top: 10px;">
-                        <button type="submit" class="btn btn-primary">Initialize Tournament</button>
-                    </div>
-                </form>
+                </div>
             </div>
 
-            <!-- Fixture Table -->
-            <div class="glass-card">
-                <div
-                    style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
-                    <h3>Live Fixtures & Results</h3>
-                    <button class="btn btn-secondary btn-sm" onclick="openModal('scoreModal')">Update Score</button>
+            <!-- CREATE TOURNAMENT SECTION -->
+            <div id="section-create" style="display: none;">
+                <div class="glass-card">
+                    <h3
+                        style="margin-bottom: 24px; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px;">
+                        Create New Tournament</h3>
+                    <form class="form-grid" id="createTournamentForm">
+                        <div class="input-group">
+                            <label>Tournament Name</label>
+                            <input type="text" id="t-name" class="glass-input" placeholder="e.g. Pune Tech League"
+                                required>
+                        </div>
+                        <div class="input-group">
+                            <label>Sport Type</label>
+                            <select id="t-sport" class="glass-input">
+                                <option value="Football">Football</option>
+                                <option value="Cricket">Cricket</option>
+                                <option value="Basketball">Basketball</option>
+                                <option value="Badminton">Badminton</option>
+                                <option value="Tennis">Tennis</option>
+                                <option value="Volleyball">Volleyball</option>
+                                <option value="Esports">Esports</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Format</label>
+                            <select id="t-format" class="glass-input">
+                                <option value="knockout">Knockout</option>
+                                <option value="round_robin">Round Robin</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label>Number of Teams</label>
+                            <input type="number" id="t-teams" class="glass-input" min="2" max="64" value="8" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Max Participants</label>
+                            <input type="number" id="t-maxParticipants" class="glass-input" min="2" max="500" value="50"
+                                required>
+                        </div>
+                        <div class="input-group">
+                            <label>Start Date</label>
+                            <input type="date" id="t-date" class="glass-input" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Location / Venue</label>
+                            <input type="text" id="t-location" class="glass-input" placeholder="Stadium / Arena"
+                                required>
+                        </div>
+                        <div class="input-group">
+                            <label>City</label>
+                            <input type="text" id="t-city" class="glass-input" placeholder="e.g. Pune" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Tournament Coordinates</label>
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <input type="text" id="t-latitude" class="glass-input" placeholder="Latitude" readonly>
+                                <input type="text" id="t-longitude" class="glass-input" placeholder="Longitude"
+                                    readonly>
+                            </div>
+                            <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap;">
+                                <button type="button" class="btn btn-secondary btn-sm"
+                                    onclick="fillTournamentCoordinates()">Use Current Location</button>
+                                <span id="t-locationStatus"
+                                    style="font-size: 0.8rem; color: var(--text-muted);">Optional, but needed for
+                                    nearest-tournament search.</span>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Match Time</label>
+                            <input type="time" id="t-matchTime" class="glass-input" required>
+                        </div>
+                        <div class="input-group">
+                            <label>Entry Fee (₹)</label>
+                            <input type="number" id="t-fee" class="glass-input" min="0" value="0">
+                        </div>
+                        <div style="grid-column: 1 / -1; margin-top: 10px;">
+                            <button type="submit" class="btn btn-primary" id="createBtn">Initialize Tournament</button>
+                        </div>
+                    </form>
                 </div>
-                <div style="overflow-x: auto;">
-                    <table class="glass-table">
-                        <thead>
-                            <tr>
-                                <th>Match ID</th>
-                                <th>Team A</th>
-                                <th>Score</th>
-                                <th>Team B</th>
-                                <th>Date/Time</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>#F01</td>
-                                <td>Titans FC</td>
-                                <td style="font-weight: 700;">3 - 1</td>
-                                <td>Spartans SC</td>
-                                <td>Oct 10, 18:00</td>
-                                <td><span class="badge badge-completed">Completed</span></td>
-                            </tr>
-                            <tr>
-                                <td>#F02</td>
-                                <td>Iron Wolves</td>
-                                <td style="font-weight: 700;">-</td>
-                                <td>Thunder Strikers</td>
-                                <td>Oct 12, 10:00</td>
-                                <td><span class="badge badge-upcoming">Upcoming</span></td>
-                            </tr>
-                            <tr>
-                                <td>#F03</td>
-                                <td class="text-accent">Royal City</td>
-                                <td style="font-weight: 700;">2 - 0</td>
-                                <td>Kings XI</td>
-                                <td>Oct 12, 14:00</td>
-                                <td><span class="badge badge-live">Live</span></td>
-                            </tr>
-                        </tbody>
-                    </table>
+            </div>
+
+            <!-- FIXTURES SECTION -->
+            <div id="section-fixtures" style="display: none;">
+                <div class="glass-card" style="margin-bottom: 24px;">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 16px;">
+                        <h3>📋 Fixtures & Results</h3>
+                        <button class="btn btn-secondary btn-sm" onclick="openModal('scoreModal')">Update Score</button>
+                    </div>
+
+                    <!-- Tournament selector -->
+                    <div class="tournament-selector">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px; display: block;">Select
+                            Tournament</label>
+                        <select id="fixtureTournamentSelect" class="glass-input"
+                            onchange="loadMatchesForTournament(this.value)" style="max-width: 400px;">
+                            <option value="">-- Select a Tournament --</option>
+                        </select>
+                        <button class="btn btn-primary btn-sm" style="margin-top: 12px;"
+                            onclick="generateFixturesForSelected()">⚡ Generate Fixtures</button>
+                    </div>
+
+                    <div style="overflow-x: auto;">
+                        <table class="glass-table">
+                            <thead>
+                                <tr>
+                                    <th>Round</th>
+                                    <th>Team A</th>
+                                    <th>Score</th>
+                                    <th>Team B</th>
+                                    <th>Date/Time</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fixturesTableBody">
+                                <tr>
+                                    <td colspan="6"
+                                        style="color: var(--text-muted); text-align: center; padding: 20px;">
+                                        Select a tournament to view fixtures.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TEAMS SECTION -->
+            <div id="section-teams" style="display: none;">
+                <div class="glass-card">
+                    <div
+                        style="border-bottom: 1px solid var(--glass-border); padding-bottom: 12px; margin-bottom: 20px;">
+                        <h3>👥 Manage Teams</h3>
+                    </div>
+                    <div style="margin-bottom: 20px;">
+                        <label
+                            style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 8px; display: block;">Select
+                            Tournament</label>
+                        <select id="teamTournamentSelect" class="glass-input"
+                            onchange="loadTeamsForTournament(this.value)" style="max-width: 400px;">
+                            <option value="">-- Select a Tournament --</option>
+                        </select>
+                    </div>
+                    <div id="teamsListContainer">
+                        <p style="color: var(--text-muted);">Select a tournament to view teams.</p>
+                    </div>
+
+                    <!-- Add Team Form -->
+                    <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--glass-border);">
+                        <h4 style="margin-bottom: 16px;">Add New Team</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                            <div class="input-group">
+                                <label>Team Name</label>
+                                <input type="text" id="newTeamName" class="glass-input" placeholder="e.g. Titans FC">
+                            </div>
+                            <div class="input-group">
+                                <label>Players (comma separated)</label>
+                                <input type="text" id="newTeamPlayers" class="glass-input"
+                                    placeholder="Alice, Bob, Charlie">
+                            </div>
+                        </div>
+                        <button class="btn btn-primary" style="margin-top: 12px;" onclick="addTeam()">Add Team</button>
+                    </div>
                 </div>
             </div>
         </main>
     </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
 
     <!-- Score Update Modal -->
     <div class="modal" id="scoreModal">
         <div class="glass-card modal-content fade-in-up">
             <span class="close-modal" onclick="closeModal('scoreModal')">&times;</span>
             <h3 style="margin-bottom: 24px;">Update Match Score</h3>
-            <form>
-                <div class="input-group">
-                    <label>Select Match ID</label>
-                    <select class="glass-input">
-                        <option>#F02 (Iron Wolves vs Thunder Strikers)</option>
-                        <option>#F03 (Royal City vs Kings XI)</option>
-                    </select>
+            <div class="input-group">
+                <label>Select Tournament</label>
+                <select id="scoreModalTournamentSelect" class="glass-input"
+                    onchange="loadMatchesForScoreModal(this.value)">
+                    <option value="">-- Select Tournament --</option>
+                </select>
+            </div>
+            <div class="input-group" style="margin-top: 16px;">
+                <label>Select Match</label>
+                <select id="scoreModalMatchSelect" class="glass-input">
+                    <option value="">-- Select Match --</option>
+                </select>
+            </div>
+            <div
+                style="display: flex; gap: 20px; margin-top: 20px; align-items: center; justify-content: space-between;">
+                <div class="input-group" style="flex:1;">
+                    <label>Team A Score</label>
+                    <input type="number" id="scoreA" class="glass-input" value="0" min="0">
                 </div>
-                <div
-                    style="display: flex; gap: 20px; margin-top: 20px; align-items: center; justify-content: space-between;">
-                    <div class="input-group" style="flex:1;">
-                        <label>Team A Score</label>
-                        <input type="number" class="glass-input" value="0" min="0">
-                    </div>
-                    <div style="font-size: 1.5rem; color: var(--text-muted); padding-top: 15px;">-</div>
-                    <div class="input-group" style="flex:1;">
-                        <label>Team B Score</label>
-                        <input type="number" class="glass-input" value="0" min="0">
-                    </div>
+                <div style="font-size: 1.5rem; color: var(--text-muted); padding-top: 15px;">-</div>
+                <div class="input-group" style="flex:1;">
+                    <label>Team B Score</label>
+                    <input type="number" id="scoreB" class="glass-input" value="0" min="0">
                 </div>
-                <div class="input-group" style="margin-top: 20px;">
-                    <label>Match Status</label>
-                    <select class="glass-input">
-                        <option>Live</option>
-                        <option>Completed</option>
-                    </select>
-                </div>
-                <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 20px;"
-                    onclick="closeModal('scoreModal')">Save Update</button>
-            </form>
+            </div>
+            <div class="input-group" style="margin-top: 20px;">
+                <label>Match Status</label>
+                <select id="matchStatus" class="glass-input" disabled>
+                    <option value="live">Live (Automatic)</option>
+                    <option value="finished">Finished</option>
+                    <option value="upcoming">Upcoming</option>
+                </select>
+            </div>
+            <button type="button" class="btn btn-primary" style="width: 100%; margin-top: 20px;"
+                onclick="submitScoreUpdate()">Save Update</button>
         </div>
     </div>
 
     <script>
+        const API_URL = 'https://tournamenthub-backend.onrender.com/api';
+
+        // Toast system
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `<span>${type === 'success' ? '✅' : '❌'}</span><span>${message}</span>`;
+            container.appendChild(toast);
+            setTimeout(() => toast.classList.add('show'), 10);
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const token = localStorage.getItem('token');
-            if (!token) {
-                window.location.href = 'login.html';
+        function showSection(id, el) {
+            document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+            if (el) el.classList.add('active');
+            document.getElementById('section-dashboard').style.display = 'none';
+            document.getElementById('section-create').style.display = 'none';
+            document.getElementById('section-fixtures').style.display = 'none';
+            document.getElementById('section-teams').style.display = 'none';
+            document.getElementById(`section-${id}`).style.display = 'block';
+        }
+
+        function getStatusBadge(status) {
+            if (status === 'ongoing' || status === 'live') return '<span class="badge badge-live">🟢 Live</span>';
+            if (status === 'upcoming') return '<span class="badge badge-upcoming">🟡 Upcoming</span>';
+            if (status === 'completed' || status === 'finished') return '<span class="badge badge-secondary">⚫ Finished</span>';
+            return `<span class="badge badge-secondary">${status}</span>`;
+        }
+
+        let myTournaments = [];
+
+        // Keep time display consistent across tournament cards and fixtures.
+        function formatTime(time) {
+            if (!time) return 'TBA';
+            const [hour, minute] = String(time).split(':');
+            let h = parseInt(hour, 10);
+            if (Number.isNaN(h) || minute === undefined) return 'TBA';
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${minute} ${ampm}`;
+        }
+
+        // Hide raw coordinates from the UI and show only readable venue text.
+        function formatVenueLabel(venue, city) {
+            return [venue, city].filter(Boolean).join(', ') || 'TBA';
+        }
+
+        function getAutoMatchStatus(matchDate) {
+            if (!matchDate) return 'upcoming';
+            const date = new Date(matchDate);
+            const today = new Date();
+            const matchDay = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+            const todayDay = new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+            if (matchDay < todayDay) return 'finished';
+            if (matchDay > todayDay) return 'upcoming';
+            return 'live';
+        }
+
+        function validateTournamentPayload(payload) {
+            if (!payload.name) return 'Tournament name is required.';
+            if (!payload.sport) return 'Sport is required.';
+            if (!payload.location) return 'Venue is required.';
+            if (!payload.city) return 'City is required.';
+            if (!payload.startDate) return 'Start date is required.';
+            if (!payload.matchTime) return 'Match time is required.';
+            return '';
+        }
+
+        async function reverseGeocodeLocation(latitude, longitude) {
+            const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${encodeURIComponent(latitude)}&lon=${encodeURIComponent(longitude)}`, {
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to reverse geocode coordinates.');
+            }
+
+            const data = await response.json();
+            const address = data.address || {};
+            const venue = data.name
+                || address.amenity
+                || address.building
+                || address.road
+                || address.suburb
+                || '';
+            const city = address.city
+                || address.town
+                || address.village
+                || address.county
+                || '';
+
+            return {
+                venue: venue || data.display_name?.split(',')[0] || '',
+                city,
+            };
+        }
+
+        function updateTournamentLocationStatus(message, isError = false) {
+            const status = document.getElementById('t-locationStatus');
+            if (!status) return;
+            status.textContent = message;
+            status.style.color = isError ? '#ff4d4f' : 'var(--text-muted)';
+        }
+
+        function fillTournamentCoordinates() {
+            const latitudeInput = document.getElementById('t-latitude');
+            const longitudeInput = document.getElementById('t-longitude');
+
+            if (!navigator.geolocation) {
+                updateTournamentLocationStatus('Geolocation is not supported in this browser.', true);
                 return;
             }
+
+            updateTournamentLocationStatus('Fetching your current location...');
+
+            navigator.geolocation.getCurrentPosition(
+                async (position) => {
+                    latitudeInput.value = position.coords.latitude.toFixed(6);
+                    longitudeInput.value = position.coords.longitude.toFixed(6);
+                    updateTournamentLocationStatus('Coordinates captured. Resolving venue...');
+
+                    try {
+                        const locationData = await reverseGeocodeLocation(latitudeInput.value, longitudeInput.value);
+                        if (locationData.venue) {
+                            document.getElementById('t-location').value = locationData.venue;
+                        }
+                        if (locationData.city) {
+                            document.getElementById('t-city').value = locationData.city;
+                        }
+                        updateTournamentLocationStatus('Location filled from your current position.');
+                    } catch (geoError) {
+                        updateTournamentLocationStatus('Coordinates captured, but address lookup failed. Please confirm venue and city.', true);
+                    }
+                },
+                (error) => {
+                    const message = error.code === error.PERMISSION_DENIED
+                        ? 'Location access was denied. You can still create the tournament without proximity search.'
+                        : 'Could not fetch your location right now.';
+                    updateTournamentLocationStatus(message, true);
+                },
+                {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 300000,
+                }
+            );
+        }
+
+        async function loadOrganizerData() {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'login.html'; return; }
+
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            // Participants should not access this dashboard
+            if (user.role && user.role !== 'organizer') {
+                window.location.href = 'participant-dashboard.html';
+                return;
+            }
+            if (user.name) {
+                document.getElementById('orgAvatar').innerText = user.name.charAt(0).toUpperCase();
+                document.getElementById('orgSubtitle').innerText = `Welcome, ${user.name}! Manage your tournaments.`;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/tournaments/organizer-tournaments`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (!res.ok) throw new Error('Failed to load tournaments');
+                myTournaments = await res.json();
+
+                // Update stats
+                const live = myTournaments.filter(t => t.status === 'ongoing' || t.status === 'live').length;
+                const upcoming = myTournaments.filter(t => t.status === 'upcoming').length;
+                const completed = myTournaments.filter(t => t.status === 'completed' || t.status === 'finished').length;
+                document.getElementById('orgStatTotal').innerText = myTournaments.length;
+                document.getElementById('orgStatLive').innerText = live;
+                document.getElementById('orgStatUpcoming').innerText = upcoming;
+                document.getElementById('orgStatCompleted').innerText = completed;
+
+                // Render tournaments list
+                const listEl = document.getElementById('orgTournamentsList');
+                if (myTournaments.length === 0) {
+                    listEl.innerHTML = '<p style="color: var(--text-muted); padding: 10px;">No tournaments created yet. Click "+ New" to get started.</p>';
+                } else {
+                    let html = '';
+                    myTournaments.forEach(t => {
+                        const slots = (t.maxParticipants || 16) - (t.participants?.length || 0);
+                        const startDate = t.startDate ? new Date(t.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }) : 'TBA';
+                        html += `
+                        <div class="list-item" style="flex-wrap: wrap; gap: 12px;">
+                            <div class="item-info" style="flex: 1; min-width: 200px;">
+                                <h4>${t.name}</h4>
+                                <p>${t.sport} • ${t.format === 'knockout' ? 'Knockout' : 'Round Robin'} • ${startDate} • ${formatTime(t.matchTime)} • 📍 ${formatVenueLabel(t.location, t.city)}</p>
+                                <p style="margin-top: 4px; font-size: 0.8rem; color: var(--text-muted);">
+                                    👥 ${t.participants?.length || 0}/${t.maxParticipants || 16} participants |
+                                    ${t.entryFee ? '₹' + t.entryFee : 'Free Entry'}
+                                </p>
+                            </div>
+                            <div class="item-action" style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px;">
+                                ${getStatusBadge(t.status)}
+                                <button class="btn btn-secondary btn-sm" onclick="viewFixtures('${t._id}')">View Fixtures</button>
+                            </div>
+                        </div>`;
+                    });
+                    listEl.innerHTML = html;
+                }
+
+                // Populate tournament selectors in fixtures and teams sections
+                populateTournamentSelectors();
+
+            } catch (err) {
+                console.error(err);
+                document.getElementById('orgTournamentsList').innerHTML = '<p style="color: #ff4d4f; padding: 10px;">Error loading tournaments. Is the server running?</p>';
+            }
+        }
+
+        function populateTournamentSelectors() {
+            const selects = ['fixtureTournamentSelect', 'teamTournamentSelect', 'scoreModalTournamentSelect'];
+            selects.forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.innerHTML = '<option value="">-- Select a Tournament --</option>';
+                myTournaments.forEach(t => {
+                    const opt = document.createElement('option');
+                    opt.value = t._id;
+                    opt.textContent = t.name;
+                    el.appendChild(opt);
+                });
+            });
+        }
+
+        function viewFixtures(tournamentId) {
+            showSection('fixtures', document.querySelectorAll('.menu-item')[2]);
+            document.getElementById('fixtureTournamentSelect').value = tournamentId;
+            loadMatchesForTournament(tournamentId);
+        }
+
+        async function loadFixtures() {
+            // Just ensure selector is populated
+            if (myTournaments.length === 0) await loadOrganizerData();
+            populateTournamentSelectors();
+        }
+
+        async function loadMatchesForTournament(tournamentId) {
+            const tbody = document.getElementById('fixturesTableBody');
+            if (!tournamentId) {
+                tbody.innerHTML = '<tr><td colspan="6" style="color: var(--text-muted); text-align: center; padding: 20px;">Select a tournament to view fixtures.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '<tr><td colspan="6" style="color: var(--text-muted); text-align: center; padding: 20px;">Loading...</td></tr>';
+            try {
+                const res = await fetch(`${API_URL}/matches/${tournamentId}`);
+                const matches = await res.json();
+                if (!matches || matches.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" style="color: var(--text-muted); text-align: center; padding: 20px;">No fixtures yet. Use "Generate Fixtures" after adding teams.</td></tr>';
+                    return;
+                }
+                let html = '';
+                matches.forEach(m => {
+                    const computedStatus = getAutoMatchStatus(m.matchDate);
+                    const matchDate = m.matchDate ? new Date(m.matchDate) : null;
+                    const dateStr = matchDate
+                        ? `${matchDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} ${formatTime(matchDate.toTimeString().slice(0, 5))}`
+                        : 'TBA';
+                    const score = computedStatus === 'finished' || computedStatus === 'live'
+                        ? `<strong>${m.scoreA} - ${m.scoreB}</strong>`
+                        : `<span style="color: var(--text-muted);">-</span>`;
+                    html += `<tr>
+                        <td>Round ${m.round || 1}</td>
+                        <td>${m.teamA?.teamName || 'TBD'}</td>
+                        <td>${score}</td>
+                        <td>${m.teamB?.teamName || 'TBD'}</td>
+                        <td>${dateStr}</td>
+                        <td>${getStatusBadge(computedStatus)}</td>
+                    </tr>`;
+                });
+                tbody.innerHTML = html;
+            } catch (err) {
+                tbody.innerHTML = '<tr><td colspan="6" style="color: #ff4d4f; text-align: center; padding: 20px;">Error loading fixtures.</td></tr>';
+            }
+        }
+
+        async function generateFixturesForSelected() {
+            const tournamentId = document.getElementById('fixtureTournamentSelect').value;
+            if (!tournamentId) { showToast('Select a tournament first', 'error'); return; }
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/matches/generate-fixtures`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ tournamentId })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`✅ ${data.count} fixtures generated!`, 'success');
+                    loadMatchesForTournament(tournamentId);
+                } else {
+                    showToast(data.message || 'Failed to generate fixtures', 'error');
+                }
+            } catch (err) {
+                showToast('Server error', 'error');
+            }
+        }
+
+        async function loadTeamsForTournament(tournamentId) {
+            const container = document.getElementById('teamsListContainer');
+            if (!tournamentId) { container.innerHTML = '<p style="color: var(--text-muted);">Select a tournament to view teams.</p>'; return; }
+            container.innerHTML = '<p style="color: var(--text-muted);">Loading teams...</p>';
+            try {
+                const res = await fetch(`${API_URL}/teams/${tournamentId}`);
+                const teams = await res.json();
+                if (!teams || teams.length === 0) {
+                    container.innerHTML = '<p style="color: var(--text-muted);">No teams yet. Add one below.</p>';
+                    return;
+                }
+                let html = `<table class="glass-table"><thead><tr><th>Team Name</th><th>Players</th></tr></thead><tbody>`;
+                teams.forEach(t => {
+                    html += `<tr><td style="font-weight: 600;">${t.teamName}</td><td style="color: var(--text-muted);">${Array.isArray(t.players) ? t.players.join(', ') : t.players}</td></tr>`;
+                });
+                html += `</tbody></table>`;
+                container.innerHTML = html;
+            } catch (err) {
+                container.innerHTML = '<p style="color: #ff4d4f;">Error loading teams.</p>';
+            }
+        }
+
+        async function addTeam() {
+            const tournamentId = document.getElementById('teamTournamentSelect').value;
+            const teamName = document.getElementById('newTeamName').value.trim();
+            const playersRaw = document.getElementById('newTeamPlayers').value.trim();
+            if (!tournamentId || !teamName || !playersRaw) {
+                showToast('Fill in tournament, team name, and players', 'error');
+                return;
+            }
+            const players = playersRaw.split(',').map(p => p.trim()).filter(Boolean);
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/teams/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ teamName, players, tournamentId })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(`Team "${teamName}" added!`, 'success');
+                    document.getElementById('newTeamName').value = '';
+                    document.getElementById('newTeamPlayers').value = '';
+                    loadTeamsForTournament(tournamentId);
+                } else {
+                    showToast(data.message || 'Failed to add team', 'error');
+                }
+            } catch (err) {
+                showToast('Server error', 'error');
+            }
+        }
+
+        async function loadMatchesForScoreModal(tournamentId) {
+            const select = document.getElementById('scoreModalMatchSelect');
+            select.innerHTML = '<option value="">Loading...</option>';
+            if (!tournamentId) { select.innerHTML = '<option value="">-- Select Match --</option>'; return; }
+            try {
+                const res = await fetch(`${API_URL}/matches/${tournamentId}`);
+                const matches = await res.json();
+                select.innerHTML = '<option value="">-- Select Match --</option>';
+                const liveMatches = matches.filter(m => getAutoMatchStatus(m.matchDate) === 'live');
+                if (liveMatches.length === 0) {
+                    select.innerHTML = '<option value="">Only live matches can be scored</option>';
+                    document.getElementById('matchStatus').value = 'live';
+                    return;
+                }
+                liveMatches.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m._id;
+                    opt.textContent = `R${m.round || 1}: ${m.teamA?.teamName || 'TBD'} vs ${m.teamB?.teamName || 'TBD'}`;
+                    select.appendChild(opt);
+                });
+            } catch (err) {
+                select.innerHTML = '<option value="">Error loading matches</option>';
+            }
+        }
+
+        async function submitScoreUpdate() {
+            const matchId = document.getElementById('scoreModalMatchSelect').value;
+            const scoreA = parseInt(document.getElementById('scoreA').value) || 0;
+            const scoreB = parseInt(document.getElementById('scoreB').value) || 0;
+            if (!matchId) { showToast('Select a match first', 'error'); return; }
+            const token = localStorage.getItem('token');
+            try {
+                const res = await fetch(`${API_URL}/matches/update-score`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                    body: JSON.stringify({ matchId, scoreA, scoreB })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('Score updated successfully!', 'success');
+                    closeModal('scoreModal');
+                    const sel = document.getElementById('fixtureTournamentSelect').value;
+                    if (sel) loadMatchesForTournament(sel);
+                } else {
+                    showToast(data.message || 'Failed to update', 'error');
+                }
+            } catch (err) {
+                showToast('Server error', 'error');
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('token');
+            if (!token) { window.location.href = 'login.html'; return; }
+
+            loadOrganizerData();
 
             const createForm = document.getElementById('createTournamentForm');
             createForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
+                const btn = document.getElementById('createBtn');
+                btn.textContent = 'Creating...';
+                btn.disabled = true;
 
                 const payload = {
-                    name: document.getElementById('t-name').value,
+                    name: document.getElementById('t-name').value.trim(),
                     sport: document.getElementById('t-sport').value,
                     format: document.getElementById('t-format').value,
                     numberOfTeams: parseInt(document.getElementById('t-teams').value),
+                    maxParticipants: parseInt(document.getElementById('t-maxParticipants').value),
                     startDate: document.getElementById('t-date').value,
-                    location: document.getElementById('t-location').value
+                    location: document.getElementById('t-location').value.trim(),
+                    city: document.getElementById('t-city').value.trim(),
+                    latitude: document.getElementById('t-latitude').value.trim(),
+                    longitude: document.getElementById('t-longitude').value.trim(),
+                    matchTime: document.getElementById('t-matchTime').value,
+                    entryFee: parseFloat(document.getElementById('t-fee').value) || 0,
                 };
 
+                const validationMessage = validateTournamentPayload(payload);
+                if (validationMessage) {
+                    showToast(validationMessage, 'error');
+                    btn.textContent = 'Initialize Tournament';
+                    btn.disabled = false;
+                    return;
+                }
+
                 try {
-                    const res = await fetch('http://localhost:5000/api/tournaments/create', {
+                    const res = await fetch(`${API_URL}/tournaments/create`, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -404,17 +1017,22 @@
                         },
                         body: JSON.stringify(payload)
                     });
-
                     const data = await res.json();
                     if (res.ok) {
-                        alert('Tournament Created Successfully!');
+                        showToast('Tournament created successfully! 🎉', 'success');
                         createForm.reset();
-                        // Optional: refresh dashboard or append to list
+                        updateTournamentLocationStatus('Optional, but needed for nearest-tournament search.');
+                        // Reload tournament list
+                        await loadOrganizerData();
+                        showSection('dashboard', document.querySelectorAll('.menu-item')[0]);
                     } else {
-                        alert(data.message || 'Failed to create tournament');
+                        showToast(data.message || 'Failed to create tournament', 'error');
                     }
                 } catch (error) {
-                    alert('Error connecting to server');
+                    showToast('Error connecting to server', 'error');
+                } finally {
+                    btn.textContent = 'Initialize Tournament';
+                    btn.disabled = false;
                 }
             });
         });

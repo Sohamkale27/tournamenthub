@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TournamentHub | Ticket Verification</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <main class="container" style="max-width: 760px; margin: 60px auto; padding: 20px;">
+        <div class="glass-card" style="padding: 32px;">
+            <h1 style="margin-bottom: 10px;">ENTRY TICKET</h1>
+            <p style="color: var(--text-muted); margin-bottom: 24px;">TournamentHub verification page</p>
+
+            <div id="ticketState" style="color: var(--text-muted);">Loading ticket...</div>
+
+            <div id="ticketDetails" style="display: none; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 6px;">Tournament</p>
+                    <h3 id="ticketTournament">-</h3>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 6px;">Sport</p>
+                    <h3 id="ticketSport">-</h3>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 6px;">Venue</p>
+                    <h3 id="ticketVenue">-</h3>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 6px;">Date</p>
+                    <h3 id="ticketDate">-</h3>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 6px;">Time</p>
+                    <h3 id="ticketTime">-</h3>
+                </div>
+                <div>
+                    <p style="color: var(--text-muted); margin-bottom: 6px;">Player</p>
+                    <h3 id="ticketPlayer">-</h3>
+                </div>
+                <div style="grid-column: 1 / -1;">
+                    <p style="color: var(--text-muted); margin-bottom: 6px;">Coupon</p>
+                    <h3 id="ticketCoupon">-</h3>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const API_URL = 'https://tournamenthub-backend.onrender.com/api';
+
+        function formatTime(time) {
+            if (!time) return 'TBA';
+            if (/AM|PM/i.test(String(time))) return String(time).toUpperCase();
+            const [hour, minute] = String(time).split(':');
+            let h = parseInt(hour, 10);
+            if (Number.isNaN(h) || minute === undefined) return time;
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${minute} ${ampm}`;
+        }
+
+        async function loadTicket() {
+            const params = new URLSearchParams(window.location.search);
+            const coupon = params.get('coupon');
+            const state = document.getElementById('ticketState');
+            const details = document.getElementById('ticketDetails');
+
+            if (!coupon) {
+                state.textContent = 'No coupon code provided.';
+                return;
+            }
+
+            try {
+                const res = await fetch(`${API_URL}/tournaments/ticket/${encodeURIComponent(coupon)}`);
+                const data = await res.json();
+
+                if (!res.ok) {
+                    state.textContent = data.message || 'Ticket not found.';
+                    return;
+                }
+
+                document.getElementById('ticketTournament').textContent = data.tournament.name || 'TBA';
+                document.getElementById('ticketSport').textContent = data.tournament.sport || 'TBA';
+                document.getElementById('ticketVenue').textContent = data.tournament.venueLabel || 'TBA';
+                document.getElementById('ticketDate').textContent = data.tournament.date || 'TBA';
+                document.getElementById('ticketTime').textContent = formatTime(data.tournament.time) || 'TBA';
+                document.getElementById('ticketPlayer').textContent = data.player || 'Participant';
+                document.getElementById('ticketCoupon').textContent = data.couponCode || coupon;
+
+                state.style.display = 'none';
+                details.style.display = 'grid';
+            } catch (error) {
+                state.textContent = 'Could not load ticket details.';
+            }
+        }
+
+        loadTicket();
+    </script>
+</body>
+
+</html>

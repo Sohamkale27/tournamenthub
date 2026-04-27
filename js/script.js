@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (tList) {
         tList.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding: 20px;">Loading tournaments...</div>';
 
-        fetch('http://localhost:5000/api/tournaments')
+        fetch('https://tournamenthub-backend.onrender.com/api/tournaments')
             .then(res => res.json())
             .then(tournaments => {
                 tList.innerHTML = '';
@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             lBody.innerHTML = '<tr><td colspan="7" style="text-align:center;">Loading leaderboard...</td></tr>';
 
-            fetch(`http://localhost:5000/api/leaderboard/${tId}`)
+            fetch(`https://tournamenthub-backend.onrender.com/api/leaderboard/${tId}`)
                 .then(res => res.json())
                 .then(players => {
                     lBody.innerHTML = '';
@@ -127,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
 
                         try {
-                            const res = await fetch("http://localhost:5000/api/auth/register", {
+                            const res = await fetch("https://tournamenthub-backend.onrender.com/api/auth/register", {
                                 method: "POST",
                                 headers: {
                                     "Content-Type": "application/json"
