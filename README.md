@@ -48,3 +48,17 @@ Login → Create Tournament → Add Teams → Generate Fixtures → Update Score
 - Live score updates
 - Payment integration
 - Mobile app
+
+## Project Screenshots
+
+### Login Page
+![Login](screenshots/login.png)
+
+### Organizer Dashboard
+![Organizer Dashboard](screenshots/organizer.png)
+
+### Participant Dashboard
+![Participant Dashboard](screenshots/participant.png)
+
+### QR Ticket
+![QR Ticket](screenshots/ticket.png)
